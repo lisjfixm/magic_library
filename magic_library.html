@@ -163,18 +163,111 @@ h1,h2,h3{font-weight:normal;letter-spacing:4px;}
 }
 .puzzle-actions{display:flex;gap:10px;margin-top:8px;}
 
-/* 書頁排序 */
-.page-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:600px;}
-.page-card{
-  width:90px;height:120px;background:linear-gradient(160deg,var(--paper) 0%,var(--paper-dim) 100%);
-  color:var(--ink);border-radius:3px;padding:8px;cursor:pointer;
-  box-shadow:0 2px 8px rgba(0,0,0,.4);font-size:11px;line-height:1.5;
-  display:flex;flex-direction:column;justify-content:space-between;
-  transition:all .2s;border:2px solid transparent;position:relative;
+/* ===== 打開的透明書本（書頁排序新玩法） ===== */
+.book-stage{
+  position:relative;width:100%;max-width:560px;display:flex;align-items:center;justify-content:center;
+  perspective:1600px;margin:4px 0;
 }
-.page-card.selected{border-color:var(--gold);box-shadow:0 0 16px rgba(212,175,55,.6);transform:scale(1.05);}
-.page-card .pg-num{position:absolute;bottom:4px;right:6px;font-size:10px;color:#8a7a55;}
-.page-card .pg-text{font-size:11px;}
+.open-book{
+  position:relative;width:420px;max-width:90vw;height:300px;
+  transform-style:preserve-3d;
+}
+.book-spread{
+  position:absolute;inset:0;display:flex;opacity:0;pointer-events:none;
+  transition:transform .5s ease, opacity .5s ease;
+  transform-origin:left center;
+}
+.book-spread.active{opacity:1;pointer-events:auto;}
+.book-spread.flip-next{transform:rotateY(-12deg);opacity:0;}
+.book-spread.flip-prev{transform:rotateY(12deg);opacity:0;}
+.bpage{
+  flex:1;position:relative;background:rgba(245,230,200,.10);
+  border:1px solid rgba(212,175,55,.25);
+  display:flex;align-items:center;justify-content:center;
+  padding:14px;opacity:.9;
+}
+.bpage.left{border-radius:6px 0 0 6px;border-right:none;}
+.bpage.right{border-radius:0 6px 6px 0;border-left:none;
+  background-image:linear-gradient(to left, rgba(0,0,0,.25) 0%, transparent 20%);
+}
+.bpage.single{border-radius:6px;border:none;background:rgba(60,48,24,.55);
+  border:1px solid var(--gold-soft);}
+.bpage-label{position:absolute;top:8px;font-size:10px;color:var(--gold-soft);letter-spacing:2px;opacity:.7;}
+.bpage.single .bpage-label{color:var(--gold);}
+.page-slot{
+  width:88%;height:78%;border:1.5px dashed rgba(212,175,55,.4);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:all .25s;position:relative;
+}
+.page-slot:hover{border-color:var(--gold);background:rgba(212,175,55,.06);}
+.page-slot.filled{border-style:solid;border-color:transparent;}
+.page-slot.error{border-color:var(--danger)!important;box-shadow:0 0 14px rgba(184,84,80,.6);}
+.page-slot .slot-hint{font-size:11px;color:var(--paper-faded);}
+
+/* 老紙紙條 */
+.paper-slip{
+  background:linear-gradient(135deg,#f5e6c8 0%,#e8d5a3 60%,#d4c089 100%);
+  color:var(--ink);padding:10px 12px;width:130px;min-height:70px;
+  font-size:11px;line-height:1.6;cursor:pointer;position:relative;
+  border-radius:2px 6px 4px 3px;
+  box-shadow:2px 3px 8px rgba(0,0,0,.5);
+  transition:all .2s;
+  /* 紙紋 */
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(139,111,60,.12) 0.5px, transparent 1px),
+    radial-gradient(circle at 70% 60%, rgba(139,111,60,.10) 0.5px, transparent 1px),
+    linear-gradient(135deg,#f5e6c8 0%,#e8d5a3 60%,#d4c089 100%);
+  background-size:6px 6px, 9px 9px, 100% 100%;
+}
+.paper-slip::after{
+  content:'';position:absolute;right:0;bottom:0;width:18px;height:18px;
+  background:linear-gradient(135deg, transparent 50%, rgba(0,0,0,.25) 50%, #c9b489 100%);
+  border-radius:0 0 4px 0;
+}
+.paper-slip.selected{outline:2px solid var(--gold);outline-offset:2px;transform:scale(1.05) rotate(-1deg);box-shadow:0 0 18px rgba(212,175,55,.6);}
+.paper-slip.placed{display:none;}
+.paper-slip .slip-text{display:block;}
+.paper-slip .slip-num{position:absolute;bottom:3px;right:6px;font-size:9px;color:#8a7a55;}
+
+/* 書本上已貼的紙條 */
+.page-slot .paper-slip{width:92%;min-height:80px;cursor:pointer;}
+.page-slot .paper-slip.placed{display:block;opacity:1;}
+.page-slot.error .paper-slip{box-shadow:0 0 14px rgba(184,84,80,.7);}
+
+.book-nav{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:36px;height:36px;border-radius:50%;cursor:pointer;
+  background:rgba(20,28,46,.8);border:1px solid var(--gold-soft);
+  display:flex;align-items:center;justify-content:center;z-index:5;
+  transition:all .2s;color:var(--gold);
+}
+.book-nav:hover{background:rgba(60,48,24,.9);box-shadow:0 0 12px rgba(212,175,55,.4);}
+.book-nav.disabled{opacity:.3;cursor:not-allowed;}
+.book-nav.prev{left:-44px;}
+.book-nav.next{right:-44px;}
+
+/* 小書（法則歸類用） */
+.mini-book{
+  width:44px;height:62px;position:relative;cursor:pointer;
+  border-radius:2px 4px 4px 2px;
+  box-shadow:2px 3px 6px rgba(0,0,0,.5), inset -1px 0 2px rgba(0,0,0,.3);
+  transition:all .2s;display:flex;flex-direction:column;
+}
+.mini-book:hover{transform:translateY(-3px);}
+.mini-book.selected{outline:2px solid var(--gold);outline-offset:2px;transform:scale(1.08);}
+.mini-book .mb-spine{
+  position:absolute;left:0;top:0;bottom:0;width:10px;
+  background:rgba(0,0,0,.3);border-radius:2px 0 0 2px;
+}
+.mini-book .mb-cover{
+  flex:1;margin-left:10px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;padding:4px;
+  border-radius:0 3px 3px 0;
+}
+.mini-book .mb-icon{width:18px;height:18px;}
+.mini-book .mb-label{font-size:9px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);letter-spacing:1px;}
+.mini-book.placed{opacity:.25;pointer-events:none;}
+.zone-cards .mini-book{margin:2px;}
 
 /* 殘頁 / 書架 網格 */
 .puzzle-grid{display:grid;gap:6px;}
@@ -1124,49 +1217,190 @@ function buildPuzzle(lv){
   }
 }
 
-/* ----- 1. 書頁排序 ----- */
+/* ----- 1. 書頁排序（透明書本貼紙模式） ----- */
 function buildOrder(lv, area){
-  // 打亂頁面
-  const pages = [...lv.pages].sort(()=>Math.random()-0.5);
-  puzzleState.data.pages = pages.map(p=>({...p}));
-  puzzleState.data.selected = -1;
-  const row = document.createElement('div');
-  row.className = 'page-row';
-  puzzleState.data.row = row;
-  renderOrder(row, lv);
-  area.appendChild(row);
+  const n = lv.pages.length;
+  // 打亂紙條
+  const slips = [...lv.pages].sort(()=>Math.random()-0.5);
+  puzzleState.data.slips = slips.map(p=>({...p}));
+  puzzleState.data.placed = new Array(n).fill(null); // slot 1..n -> slip
+  puzzleState.data.selectedSlip = null;
+  puzzleState.data.state = 0;
+
+  // 建立 spreads: [cover, (cb,p1), (p2,p3), ..., back]
+  const spreads = [{left:null,right:null,label:'封面'}];
+  // 第一跨頁：左=封面背(空白), 右=p1
+  spreads.push({left:null,right:1,label:''});
+  // 其餘成對
+  let p = 2;
+  while(p <= n){
+    if(p+1 <= n){
+      spreads.push({left:p, right:p+1, label:''});
+    } else {
+      spreads.push({left:p, right:null, label:''});
+    }
+    p += 2;
+  }
+  spreads.push({left:null,right:null,label:'封底'});
+  puzzleState.data.spreads = spreads;
+
+  // 書本舞台
+  const stage = document.createElement('div');
+  stage.className = 'book-stage';
+  stage.innerHTML = `
+    <div class="open-book" id="openBook">
+      <div class="book-spread" data-sp="0"></div>
+    </div>
+    <div class="book-nav prev" data-nav="prev">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+    </div>
+    <div class="book-nav next" data-nav="next">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+    </div>
+  `;
+  area.appendChild(stage);
+  puzzleState.data.stage = stage;
+
+  // 待選紙條區
+  const tray = document.createElement('div');
+  tray.className = 'tray';
+  tray.style.marginTop = '8px';
+  puzzleState.data.tray = tray;
+  area.appendChild(tray);
+
+  // 檢查按鈕
+  const checkBtn = document.createElement('button');
+  checkBtn.className = 'btn primary small';
+  checkBtn.textContent = '檢查排序';
+  checkBtn.onclick = checkOrderBook;
+  area.appendChild(checkBtn);
+
+  renderBook();
+  renderTray();
 }
-function renderOrder(row, lv){
-  row.innerHTML = '';
-  puzzleState.data.pages.forEach((p, idx)=>{
+
+function renderBook(){
+  const stage = puzzleState.data.stage;
+  const spreads = puzzleState.data.spreads;
+  const sp = puzzleState.data.state;
+  // 清除舊 spread
+  stage.querySelectorAll('.book-spread').forEach(e=>e.remove());
+  const spread = spreads[sp];
+  const el = document.createElement('div');
+  el.className = 'book-spread active';
+  el.dataset.sp = sp;
+
+  function makePage(side, pageNum){
+    const pg = document.createElement('div');
+    pg.className = 'bpage ' + side;
+    if(pageNum===null || pageNum===undefined){
+      // 空白頁（封面背/封底背）
+      pg.innerHTML = `<div class="bpage-label">${side==='left'?'封面背':'封底背'}</div>`;
+    } else {
+      pg.innerHTML = `<div class="bpage-label">第 ${pageNum} 頁</div>`;
+      const slot = document.createElement('div');
+      slot.className = 'page-slot';
+      slot.dataset.page = pageNum;
+      const placedSlip = puzzleState.data.placed[pageNum-1];
+      if(placedSlip){
+        slot.classList.add('filled');
+        slot.innerHTML = `<div class="paper-slip placed"><span class="slip-text">${placedSlip.text}</span></div>`;
+        slot.onclick = ()=>{
+          // 取下
+          puzzleState.data.placed[pageNum-1] = null;
+          sfxPlace();
+          renderBook(); renderTray();
+        };
+      } else {
+        slot.innerHTML = `<span class="slot-hint">點擊貼上紙條</span>`;
+        slot.onclick = ()=>{
+          if(puzzleState.data.selectedSlip===null){ toast('請先在下方選擇一張紙條'); return; }
+          puzzleState.data.placed[pageNum-1] = puzzleState.data.selectedSlip;
+          puzzleState.data.selectedSlip = null;
+          sfxPlace();
+          renderBook(); renderTray();
+        };
+      }
+      pg.appendChild(slot);
+    }
+    return pg;
+  }
+
+  if(spread.label==='封面' || spread.label==='封底'){
+    const pg = document.createElement('div');
+    pg.className = 'bpage single';
+    pg.innerHTML = `<div class="bpage-label">${spread.label}</div>
+      <div style="color:var(--gold-soft);font-size:14px;letter-spacing:4px;">${currentLevel.name}</div>`;
+    el.appendChild(pg);
+  } else {
+    el.appendChild(makePage('left', spread.left));
+    el.appendChild(makePage('right', spread.right));
+  }
+  stage.querySelector('.open-book').appendChild(el);
+
+  // 導航按鈕狀態
+  const prevBtn = stage.querySelector('[data-nav="prev"]');
+  const nextBtn = stage.querySelector('[data-nav="next"]');
+  prevBtn.classList.toggle('disabled', sp===0);
+  nextBtn.classList.toggle('disabled', sp===spreads.length-1);
+  prevBtn.onclick = ()=>{
+    if(sp===0) return;
+    sfxPage();
+    puzzleState.data.state = sp-1;
+    renderBook();
+  };
+  nextBtn.onclick = ()=>{
+    if(sp===spreads.length-1) return;
+    sfxPage();
+    puzzleState.data.state = sp+1;
+    renderBook();
+  };
+}
+
+function renderTray(){
+  const tray = puzzleState.data.tray;
+  tray.innerHTML = '';
+  puzzleState.data.slips.forEach((slip,i)=>{
+    // 已放置的紙條不在托盤顯示
+    if(puzzleState.data.placed.includes(slip)) return;
     const c = document.createElement('div');
-    c.className = 'page-card' + (puzzleState.data.selected===idx?' selected':'');
-    c.innerHTML = `<div class="pg-text">${p.text}</div><div class="pg-num">頁 ${idx+1}</div>`;
+    c.className = 'paper-slip' + (puzzleState.data.selectedSlip===slip?' selected':'');
+    c.innerHTML = `<span class="slip-text">${slip.text}</span><span class="slip-num">紙條</span>`;
     c.onclick = ()=>{
       sfxPickup();
-      if(puzzleState.data.selected===-1){
-        puzzleState.data.selected = idx;
-      } else if(puzzleState.data.selected===idx){
-        puzzleState.data.selected = -1;
-      } else {
-        // 交換
-        const s = puzzleState.data.selected;
-        [puzzleState.data.pages[s], puzzleState.data.pages[idx]] = [puzzleState.data.pages[idx], puzzleState.data.pages[s]];
-        puzzleState.data.selected = -1;
-        sfxPlace();
-      }
-      renderOrder(row, lv);
-      checkOrder();
+      puzzleState.data.selectedSlip = slip;
+      renderTray();
     };
-    row.appendChild(c);
+    tray.appendChild(c);
   });
 }
-function checkOrder(){
-  const lv = currentLevel;
-  const nums = puzzleState.data.pages.map(p=>p.n);
-  const sorted = [...nums].sort((a,b)=>a-b);
-  if(JSON.stringify(nums)===JSON.stringify(sorted)){
-    onSolve();
+
+function checkOrderBook(){
+  const n = currentLevel.pages.length;
+  // 檢查是否全部貼滿
+  if(puzzleState.data.placed.includes(null)){
+    toast('尚有頁面未歸位');
+    sfxWrong();
+    return;
+  }
+  // 清除舊錯誤標記
+  document.querySelectorAll('.page-slot').forEach(s=>s.classList.remove('error'));
+  // 檢查每頁是否正確（slot i 應放置 n===i+1 的紙條）
+  let allCorrect = true;
+  puzzleState.data.placed.forEach((slip, idx)=>{
+    if(slip.n !== idx+1){
+      allCorrect = false;
+      // 標記該頁為錯誤
+      const slot = document.querySelector(`.page-slot[data-page="${idx+1}"]`);
+      if(slot) slot.classList.add('error');
+    }
+  });
+  if(allCorrect){
+    sfxSuccess();
+    setTimeout(()=>onSolve(), 500);
+  } else {
+    sfxWrong();
+    toast('排序有誤，紅框處請調整');
   }
 }
 
@@ -1320,6 +1554,27 @@ function buildRune(lv, area){
 }
 
 /* ----- 4. 法則歸類 ----- */
+// 元素封面配色與 SVG 圖示
+const CATE_STYLE = {
+  fire:    { color:'#c0392b', icon:`<svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2C12 2 7 8 7 13a5 5 0 0010 0c0-2-1-4-2-5 0 1-1 2-2 2 0-3-1-6-1-8z" fill="#e67e22"/></svg>` },
+  water:   { color:'#2471a3', icon:`<svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2C12 2 6 10 6 14a6 6 0 0012 0c0-4-6-12-6-12z" fill="#3498db"/></svg>` },
+  thunder: { color:'#6c3483', icon:`<svg viewBox="0 0 24 24" width="18" height="18"><path d="M13 2L5 13h5l-1 9 8-11h-5l1-9z" fill="#f1c40f"/></svg>` },
+  wind:    { color:'#148f77', icon:`<svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 8h10a3 3 0 100-6M3 12h14a3 3 0 110 6M3 16h7" stroke="#76d7c4" stroke-width="2" fill="none" stroke-linecap="round"/></svg>` },
+  earth:   { color:'#7e5109', icon:`<svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 20L9 8l4 7 3-4 5 9z" fill="#a0522d"/></svg>` },
+};
+function makeMiniBook(card, catId, label){
+  const st = CATE_STYLE[catId] || {color:'#4a4a4a', icon:''};
+  const b = document.createElement('div');
+  b.className = 'mini-book';
+  b.style.background = st.color;
+  b.innerHTML = `<div class="mb-spine"></div>
+    <div class="mb-cover" style="background:linear-gradient(135deg, ${st.color} 0%, rgba(0,0,0,.3) 100%);">
+      <div class="mb-icon">${st.icon}</div>
+      <div class="mb-label">${label}</div>
+    </div>`;
+  return b;
+}
+
 function buildCate(lv, area){
   puzzleState.data.placed = {}; // cardIdx -> true
   puzzleState.data.selected = -1;
@@ -1333,7 +1588,7 @@ function buildCate(lv, area){
     const z = document.createElement('div');
     z.className = 'cate-zone';
     z.dataset.cate = cat.id;
-    z.innerHTML = `<div class="zone-title">${cat.name}</div><div class="zone-cards"></div>`;
+    z.innerHTML = `<div class="zone-title">${cat.name}</div><div class="zone-cards" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:flex-end;min-height:70px;"></div>`;
     z.onclick = ()=>{
       if(puzzleState.data.selected===-1) return;
       const selOrigIdx = puzzleState.data.selected;
@@ -1343,13 +1598,20 @@ function buildCate(lv, area){
         // 正確放入
         puzzleState.data.placed[card.origIdx] = true;
         const holder = z.querySelector('.zone-cards');
-        const c = document.createElement('div');
-        c.className = 'law-card';
-        c.textContent = card.text;
-        c.style.opacity = '1';
-        holder.appendChild(c);
+        const mb = makeMiniBook(card, cat.id, cat.name);
+        mb.style.cursor = 'pointer';
+        mb.onclick = (e)=>{
+          e.stopPropagation();
+          // 取出放回托盤
+          mb.remove();
+          delete puzzleState.data.placed[card.origIdx];
+          const origCard = area.querySelector(`.mini-book[data-idx="${card.origIdx}"]`);
+          if(origCard) origCard.classList.remove('placed');
+          sfxPlace();
+        };
+        holder.appendChild(mb);
         // 標記原卡片
-        const origCard = area.querySelector(`[data-idx="${card.origIdx}"]`);
+        const origCard = area.querySelector(`.mini-book[data-idx="${card.origIdx}"]`);
         if(origCard) origCard.classList.add('placed');
         puzzleState.data.selected = -1;
         sfxCorrect();
@@ -1370,18 +1632,17 @@ function buildCate(lv, area){
   const tray = document.createElement('div');
   tray.className = 'tray';
   cards.forEach(card=>{
-    const c = document.createElement('div');
-    c.className = 'law-card';
-    c.textContent = card.text;
-    c.dataset.idx = card.origIdx;
-    c.onclick = ()=>{
+    const cat = lv.categories.find(c=>c.id===card.cate);
+    const mb = makeMiniBook(card, card.cate, cat.name);
+    mb.dataset.idx = card.origIdx;
+    mb.onclick = ()=>{
       if(puzzleState.data.placed[card.origIdx]) return;
       sfxPickup();
       puzzleState.data.selected = card.origIdx;
-      tray.querySelectorAll('.law-card').forEach(x=>x.classList.remove('selected'));
-      c.classList.add('selected');
+      tray.querySelectorAll('.mini-book').forEach(x=>x.classList.remove('selected'));
+      mb.classList.add('selected');
     };
-    tray.appendChild(c);
+    tray.appendChild(mb);
   });
   area.appendChild(tray);
 }
