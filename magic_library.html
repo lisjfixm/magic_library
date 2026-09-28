@@ -231,6 +231,39 @@ h1,h2,h3{font-weight:normal;letter-spacing:4px;}
 .law-card.selected{outline:2px solid var(--gold);transform:scale(1.05);}
 .law-card.placed{opacity:.25;pointer-events:none;}
 
+/* 法則約束排列 */
+.constraint-rules{
+  width:100%;max-width:600px;display:flex;flex-direction:column;gap:6px;margin-bottom:8px;
+}
+.rule-item{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(245,230,200,.05);border:1px solid var(--gold-dim);
+  border-radius:4px;padding:6px 10px;font-size:12px;color:var(--paper-dim);
+  transition:all .3s;
+}
+.rule-item .rule-icon{width:28px;height:20px;flex-shrink:0;}
+.rule-item.ok{border-color:var(--ok);color:var(--ok);}
+.rule-item.bad{border-color:var(--danger);color:var(--danger);animation:shake .4s;}
+.constraint-slots{
+  display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:8px 0;
+}
+.cslot{
+  width:64px;height:84px;border:2px dashed var(--gold-dim);border-radius:4px;
+  background:rgba(245,230,200,.04);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;
+}
+.cslot.filled{border-style:solid;border-color:var(--gold-soft);}
+.cslot.violation{border-color:var(--danger);box-shadow:0 0 12px rgba(184,84,80,.5);animation:shake .4s;}
+.cpiece{
+  background:linear-gradient(160deg,var(--paper),var(--paper-dim));color:var(--ink);
+  border-radius:4px;padding:10px 8px;font-size:12px;letter-spacing:1px;
+  cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.4);text-align:center;
+  transition:all .2s;writing-mode:vertical-rl;min-height:60px;
+}
+.cpiece.selected{outline:2px solid var(--gold);outline-offset:2px;transform:scale(1.05);}
+.cpiece.placed{opacity:.2;pointer-events:none;}
+.cslot .cpiece{writing-mode:horizontal-tb;min-height:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+
 /* 解密 */
 .decrypt-text{
   font-size:16px;line-height:2.2;letter-spacing:2px;text-align:center;
@@ -579,6 +612,47 @@ const LEVELS = [
     storyBefore:'這是元素典庫最深處的一卷。它記載五大元素如何循環不息。',
     storyAfter:'五行循環恢復運轉。你感到圖書館的光脈微微一振——星辰典庫的門開了。',
     codex:{ desc:'元素循環的核心圖譜，是魔法大陸法則的基石。', fragment:'完成此卷，星辰典庫的封印已然解鎖。' }
+  },
+  { id:'el6', vault:'element', name:'《風之位次》', type:'constraint', disorder:'法則錯位',
+    reward:60, hint:'將四種風元素排入四個位次，滿足所有約束。',
+    elements:['微風','寒風','疾風','颶風'],
+    constraints:[
+      {a:'微風', b:'寒風', type:'adj', label:'微風 必須 緊鄰 寒風'},
+      {a:'疾風', b:'颶風', type:'adj', label:'疾風 必須 緊鄰 颶風'},
+      {a:'微風', b:'颶風', type:'notadj', label:'微風 不可 鄰接 颶風'},
+    ],
+    storyBefore:'五行循環雖已恢復，但風元素的位次仍錯亂。試著依據法則約束，將四種風安置在正確的位置。',
+    storyAfter:'風之位次歸序。微風與颶風各安其位，寒風與疾風各司其職。',
+    codex:{ desc:'記錄四種風象元素的位次法則。', fragment:'風雖無形，卻有其位次——這是元素魔法的基礎。' }
+  },
+  { id:'el7', vault:'element', name:'《星風序位》', type:'constraint', disorder:'法則錯位',
+    reward:70, hint:'五種星風元素，依四條約束排列。',
+    elements:['夜光','辰星','啟明','長庚','宵明'],
+    constraints:[
+      {a:'辰星', b:'啟明', type:'adj', label:'辰星 必須 緊鄰 啟明'},
+      {a:'夜光', b:'啟明', type:'gap', label:'夜光 與 啟明 須 隔一位'},
+      {a:'長庚', b:'宵明', type:'adj', label:'長庚 必須 緊鄰 宵明'},
+      {a:'辰星', b:'長庚', type:'notadj', label:'辰星 不可 鄰接 長庚'},
+      {a:'夜光', b:'長庚', type:'notadj', label:'夜光 不可 鄰接 長庚'},
+    ],
+    storyBefore:'星辰與風交織的位次更為複雜。五個位次，五條約束——靜下心來推演。',
+    storyAfter:'星風序位完成。你看見天窗之外，星子依序亮起，一如這卷所載。',
+    codex:{ desc:'星象與風元素交織的位次圖譜。', fragment:'啟明與長庚，其實是同一顆星在晨昏的兩面。' }
+  },
+  { id:'el8', vault:'element', name:'《五行位次圖》', type:'constraint', disorder:'法則錯位',
+    reward:90, hint:'六種元素、六個位次，六條法則約束。',
+    elements:['深流','微風','厚土','點火','青雷','颶風'],
+    constraints:[
+      {a:'微風', b:'厚土', type:'adj', label:'微風 必須 緊鄰 厚土'},
+      {a:'厚土', b:'青雷', type:'gap', label:'厚土 與 青雷 須 隔一位'},
+      {a:'深流', b:'厚土', type:'notadj', label:'深流 不可 鄰接 厚土'},
+      {a:'青雷', b:'颶風', type:'adj', label:'青雷 必須 緊鄰 颶風'},
+      {a:'深流', b:'點火', type:'notadj', label:'深流 不可 鄰接 點火'},
+      {a:'微風', b:'青雷', type:'notadj', label:'微風 不可 鄰接 青雷'},
+    ],
+    storyBefore:'這是元素典庫最深處的位次圖——五大元素加上颶風的六元排列。約束繁複，卻是元素法則的精髓。',
+    storyAfter:'六元素位次歸序。你感到腳下的石地、身側的風、遠處的雷，同時輕輕共鳴。',
+    codex:{ desc:'六元素位次的終極排列圖。', fragment:'傳說解開此卷者，能憑位次感知整個大陸的元素流動。' }
   },
 
   /* ===== 星辰典庫 ===== */
@@ -1046,6 +1120,7 @@ function buildPuzzle(lv){
     case 'cate': buildCate(lv, area); break;
     case 'decrypt': buildDecrypt(lv, area); break;
     case 'shelf': buildShelf(lv, area); break;
+    case 'constraint': buildConstraint(lv, area); break;
   }
 }
 
@@ -1439,6 +1514,142 @@ function buildShelf(lv, area){
     tray.appendChild(bk);
   });
   area.appendChild(tray);
+}
+
+/* ----- 7. 法則約束排列 ----- */
+function buildConstraint(lv, area){
+  const n = lv.elements.length;
+  puzzleState.data.slots = new Array(n).fill(null); // slotIdx -> element name
+  puzzleState.data.selected = null; // element name selected in tray
+  puzzleState.data.elements = [...lv.elements].sort(()=>Math.random()-0.5);
+
+  // 約束圖示 SVG
+  const ICONS_RULE = {
+    adj: `<svg viewBox="0 0 28 20"><circle cx="6" cy="10" r="4" fill="none" stroke="#c9a96e" stroke-width="1.5"/><path d="M10 10 L18 10" stroke="#c9a96e" stroke-width="1.5"/><circle cx="22" cy="10" r="4" fill="none" stroke="#c9a96e" stroke-width="1.5"/></svg>`,
+    gap: `<svg viewBox="0 0 28 20"><circle cx="5" cy="10" r="4" fill="none" stroke="#c9a96e" stroke-width="1.5"/><circle cx="14" cy="10" r="1.5" fill="#c9a96e"/><circle cx="23" cy="10" r="4" fill="none" stroke="#c9a96e" stroke-width="1.5"/></svg>`,
+    notadj: `<svg viewBox="0 0 28 20"><circle cx="5" cy="10" r="4" fill="none" stroke="#c9a96e" stroke-width="1.5"/><path d="M11 6 L17 14 M17 6 L11 14" stroke="#b85450" stroke-width="1.5"/><circle cx="23" cy="10" r="4" fill="none" stroke="#c9a96e" stroke-width="1.5"/></svg>`,
+  };
+
+  // 約束清單
+  const rulesDiv = document.createElement('div');
+  rulesDiv.className = 'constraint-rules';
+  rulesDiv.innerHTML = '<div style="font-size:12px;color:var(--gold-soft);letter-spacing:2px;margin-bottom:2px;">法則約束</div>';
+  lv.constraints.forEach((c,i)=>{
+    const r = document.createElement('div');
+    r.className = 'rule-item';
+    r.dataset.ruleIdx = i;
+    r.innerHTML = `<div class="rule-icon">${ICONS_RULE[c.type]}</div><span>${c.label}</span>`;
+    rulesDiv.appendChild(r);
+  });
+  area.appendChild(rulesDiv);
+
+  // 位次格子
+  const slotsDiv = document.createElement('div');
+  slotsDiv.className = 'constraint-slots';
+  for(let i=0;i<n;i++){
+    const s = document.createElement('div');
+    s.className = 'cslot';
+    s.dataset.slot = i;
+    s.onclick = ()=>{
+      // 若格子已有元素，點擊歸還到托盤
+      if(puzzleState.data.slots[i]!==null){
+        const el = puzzleState.data.slots[i];
+        puzzleState.data.slots[i] = null;
+        s.classList.remove('filled','violation');
+        s.innerHTML = '';
+        const piece = area.querySelector(`.cpiece[data-el="${el}"]`);
+        if(piece) piece.classList.remove('placed');
+        sfxPlace();
+        return;
+      }
+      // 否則放置當前選中的元素
+      if(puzzleState.data.selected===null){ toast('請先選擇一個元素卡牌'); return; }
+      const el = puzzleState.data.selected;
+      puzzleState.data.slots[i] = el;
+      puzzleState.data.selected = null;
+      s.classList.add('filled');
+      s.innerHTML = `<div class="cpiece">${el}</div>`;
+      const piece = area.querySelector(`.cpiece[data-el="${el}"]`);
+      if(piece) piece.classList.add('placed');
+      area.querySelectorAll('.cpiece').forEach(p=>p.classList.remove('selected'));
+      sfxPlace();
+    };
+    slotsDiv.appendChild(s);
+  }
+  area.appendChild(slotsDiv);
+
+  // 托盤
+  const tray = document.createElement('div');
+  tray.className = 'tray';
+  puzzleState.data.elements.forEach(el=>{
+    const c = document.createElement('div');
+    c.className = 'cpiece';
+    c.dataset.el = el;
+    c.textContent = el;
+    c.onclick = ()=>{
+      if(c.classList.contains('placed')) return;
+      sfxPickup();
+      puzzleState.data.selected = el;
+      tray.querySelectorAll('.cpiece').forEach(p=>p.classList.remove('selected'));
+      c.classList.add('selected');
+    };
+    tray.appendChild(c);
+  });
+  area.appendChild(tray);
+
+  // 檢查按鈕
+  const checkBtn = document.createElement('button');
+  checkBtn.className = 'btn primary small';
+  checkBtn.textContent = '檢查約束';
+  checkBtn.onclick = ()=>checkConstraints(lv, area, rulesDiv);
+  area.appendChild(checkBtn);
+}
+
+function checkConstraints(lv, area, rulesDiv){
+  // 必須所有格子都填滿
+  if(puzzleState.data.slots.includes(null)){
+    toast('請先排滿所有位次');
+    sfxWrong();
+    return;
+  }
+  const pos = {};
+  puzzleState.data.slots.forEach((el,i)=>pos[el]=i);
+  let allOk = true;
+  lv.constraints.forEach((c,i)=>{
+    const d = Math.abs(pos[c.a]-pos[c.b]);
+    let ok = false;
+    if(c.type==='adj') ok = (d===1);
+    else if(c.type==='gap') ok = (d===2);
+    else if(c.type==='notadj') ok = (d!==1);
+    const ruleEl = rulesDiv.querySelector(`[data-rule-idx="${i}"]`);
+    ruleEl.classList.remove('ok','bad');
+    ruleEl.classList.add(ok?'ok':'bad');
+    if(!ok) allOk = false;
+  });
+  // 標記違反的元素位置
+  const slots = area.querySelectorAll('.cslot');
+  slots.forEach(s=>s.classList.remove('violation'));
+  if(!allOk){
+    sfxWrong();
+    // 高亮違反約束的元素
+    lv.constraints.forEach((c,i)=>{
+      const d = Math.abs(pos[c.a]-pos[c.b]);
+      let ok=false;
+      if(c.type==='adj') ok=(d===1);
+      else if(c.type==='gap') ok=(d===2);
+      else ok=(d!==1);
+      if(!ok){
+        [c.a,c.b].forEach(el=>{
+          const si = puzzleState.data.slots.indexOf(el);
+          if(si>=0) slots[si].classList.add('violation');
+        });
+      }
+    });
+    toast('部分約束未滿足，請調整');
+  } else {
+    sfxSuccess();
+    setTimeout(()=>onSolve(), 600);
+  }
 }
 
 /* ---------- 通關處理 ---------- */
