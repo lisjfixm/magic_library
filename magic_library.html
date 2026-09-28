@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>魔法圖書館：典籍歸序</title>
+<style>
+/* ============ 基礎與變數 ============ */
+:root{
+  --bg-deep:#0a0e1a;
+  --bg-mid:#111a2e;
+  --bg-green:#0f1f1c;
+  --gold:#d4af37;
+  --gold-soft:#c9a96e;
+  --gold-dim:rgba(212,175,55,.35);
+  --paper:#f5e6c8;
+  --paper-dim:#e8d5a3;
+  --paper-faded:#c9b489;
+  --ink:#2a2418;
+  --panel:rgba(20,28,46,.82);
+  --panel-border:rgba(212,175,55,.35);
+  --danger:#b85450;
+  --ok:#7fae6e;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:"Noto Serif TC","Songti SC","Source Han Serif TC","PMingLiU",serif;
+  background:radial-gradient(ellipse at 50% 30%,#16223d 0%,var(--bg-mid) 45%,var(--bg-deep) 100%);
+  color:var(--paper);
+  user-select:none;-webkit-user-select:none;
+  touch-action:manipulation;
+  position:relative;
+}
+/* 背景動態層 */
+#bgLayers{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.particle{position:absolute;opacity:0;animation:floatUp linear infinite;}
+@keyframes floatUp{
+  0%{transform:translateY(105vh) translateX(0) rotate(0deg);opacity:0;}
+  10%{opacity:.55;}
+  90%{opacity:.35;}
+  100%{transform:translateY(-10vh) translateX(30px) rotate(360deg);opacity:0;}
+}
+.dust{position:absolute;border-radius:50%;background:radial-gradient(circle,var(--gold) 0%,transparent 70%);opacity:.3;animation:dustFloat ease-in-out infinite;}
+@keyframes dustFloat{
+  0%,100%{transform:translate(0,0);opacity:.15;}
+  50%{transform:translate(20px,-30px);opacity:.5;}
+}
+.vignette{position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.55) 100%);}
+
+/* ============ 畫面切換 ============ */
+.screen{
+  position:fixed;inset:0;z-index:10;
+  display:flex;flex-direction:column;align-items:center;
+  padding:16px;overflow-y:auto;
+  opacity:0;pointer-events:none;transition:opacity .5s ease,transform .5s ease;
+  transform:translateY(12px);
+}
+.screen.active{opacity:1;pointer-events:auto;transform:translateY(0);}
+
+/* ============ 共用元件 ============ */
+.btn{
+  font-family:inherit;cursor:pointer;
+  background:linear-gradient(180deg,rgba(60,48,24,.85),rgba(35,28,15,.9));
+  color:var(--paper);border:1px solid var(--gold-soft);
+  padding:12px 28px;font-size:16px;letter-spacing:2px;
+  border-radius:4px;position:relative;
+  box-shadow:0 0 12px rgba(212,175,55,.15),inset 0 0 8px rgba(212,175,55,.08);
+  transition:all .25s ease;
+}
+.btn:hover,.btn:active{background:linear-gradient(180deg,rgba(90,72,36,.9),rgba(55,44,22,.95));box-shadow:0 0 20px rgba(212,175,55,.35);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn.primary{border-color:var(--gold);color:#fff3d6;}
+.btn.small{padding:8px 16px;font-size:13px;letter-spacing:1px;}
+
+.panel{
+  background:var(--panel);border:1px solid var(--panel-border);
+  border-radius:6px;padding:16px;
+  box-shadow:0 4px 24px rgba(0,0,0,.5),inset 0 0 30px rgba(212,175,55,.04);
+  backdrop-filter:blur(4px);
+}
+
+h1,h2,h3{font-weight:normal;letter-spacing:4px;}
+.title-glow{color:var(--gold);text-shadow:0 0 18px rgba(212,175,55,.6),0 0 40px rgba(212,175,55,.3);}
+
+/* ============ 標題畫面 ============ */
+#screen-title{justify-content:center;}
+#screen-title .library-mark{margin-bottom:24px;}
+#screen-title h1{font-size:32px;text-align:center;line-height:1.6;margin-bottom:8px;}
+#screen-title .subtitle{color:var(--paper-faded);letter-spacing:6px;font-size:13px;margin-bottom:48px;text-align:center;}
+#screen-title .btn-row{display:flex;flex-direction:column;gap:14px;width:240px;}
+
+/* ============ 頂欄 ============ */
+.topbar{
+  width:100%;max-width:720px;display:flex;justify-content:space-between;align-items:center;
+  padding:8px 4px;margin-bottom:12px;
+}
+.topbar .back-btn{color:var(--paper-dim);cursor:pointer;font-size:14px;letter-spacing:2px;}
+.topbar .back-btn:hover{color:var(--gold);}
+.order-display{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(20,28,46,.7);border:1px solid var(--gold-dim);
+  padding:6px 14px;border-radius:20px;font-size:14px;color:var(--gold-soft);
+}
+.order-display svg{width:16px;height:16px;}
+
+/* ============ 大廳 ============ */
+#screen-hall .hall-title{margin:8px 0 4px;font-size:22px;}
+#screen-hall .hall-sub{color:var(--paper-faded);font-size:13px;margin-bottom:18px;letter-spacing:2px;}
+.vault-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:12px;width:100%;max-width:720px;
+}
+.vault-card{
+  background:var(--panel);border:1px solid var(--panel-border);border-radius:6px;
+  padding:16px 12px;text-align:center;cursor:pointer;transition:all .3s;
+  position:relative;overflow:hidden;
+}
+.vault-card:not(.locked):hover{border-color:var(--gold);box-shadow:0 0 18px rgba(212,175,55,.25);transform:translateY(-2px);}
+.vault-card.locked{opacity:.5;cursor:not-allowed;filter:grayscale(.6);}
+.vault-card .vault-icon{width:48px;height:48px;margin:0 auto 8px;}
+.vault-card .vault-name{font-size:15px;letter-spacing:2px;margin-bottom:4px;}
+.vault-card .vault-desc{font-size:11px;color:var(--paper-faded);line-height:1.5;min-height:30px;}
+.vault-card .vault-progress{font-size:11px;color:var(--gold-soft);margin-top:6px;}
+.lock-badge{position:absolute;top:6px;right:8px;font-size:10px;color:var(--paper-faded);}
+
+.bottom-nav{
+  margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;
+}
+.bottom-nav .nav-btn{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:10px 14px;background:var(--panel);border:1px solid var(--panel-border);
+  border-radius:6px;cursor:pointer;font-size:11px;color:var(--paper-dim);min-width:72px;
+}
+.bottom-nav .nav-btn svg{width:22px;height:22px;}
+.bottom-nav .nav-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ============ 關卡列表 ============ */
+.level-list{width:100%;max-width:720px;display:flex;flex-direction:column;gap:10px;}
+.level-card{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  background:var(--panel);border:1px solid var(--panel-border);border-radius:6px;
+  cursor:pointer;transition:all .25s;
+}
+.level-card:not(.locked):hover{border-color:var(--gold);box-shadow:0 0 14px rgba(212,175,55,.2);}
+.level-card.locked{opacity:.45;cursor:not-allowed;}
+.level-card .lv-icon{width:36px;height:36px;flex-shrink:0;}
+.level-card .lv-info{flex:1;min-width:0;}
+.level-card .lv-name{font-size:15px;letter-spacing:1px;}
+.level-card .lv-meta{font-size:11px;color:var(--paper-faded);margin-top:3px;}
+.level-card .lv-stars{font-size:13px;color:var(--gold);letter-spacing:2px;}
+.level-card .lv-stars .star-empty{color:#4a4438;}
+
+/* ============ 解謎區 ============ */
+#screen-puzzle .puzzle-header{width:100%;max-width:720px;text-align:center;margin-bottom:10px;}
+#screen-puzzle .puzzle-book{font-size:18px;color:var(--gold);letter-spacing:3px;}
+#screen-puzzle .puzzle-disorder{font-size:12px;color:var(--paper-faded);margin-top:4px;letter-spacing:2px;}
+#screen-puzzle .puzzle-hint{font-size:12px;color:var(--paper-dim);margin-top:6px;line-height:1.6;min-height:18px;}
+.puzzle-area{
+  width:100%;max-width:720px;flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;padding:10px;
+}
+.puzzle-actions{display:flex;gap:10px;margin-top:8px;}
+
+/* 書頁排序 */
+.page-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:600px;}
+.page-card{
+  width:90px;height:120px;background:linear-gradient(160deg,var(--paper) 0%,var(--paper-dim) 100%);
+  color:var(--ink);border-radius:3px;padding:8px;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.4);font-size:11px;line-height:1.5;
+  display:flex;flex-direction:column;justify-content:space-between;
+  transition:all .2s;border:2px solid transparent;position:relative;
+}
+.page-card.selected{border-color:var(--gold);box-shadow:0 0 16px rgba(212,175,55,.6);transform:scale(1.05);}
+.page-card .pg-num{position:absolute;bottom:4px;right:6px;font-size:10px;color:#8a7a55;}
+.page-card .pg-text{font-size:11px;}
+
+/* 殘頁 / 書架 網格 */
+.puzzle-grid{display:grid;gap:6px;}
+.grid-slot{
+  background:rgba(245,230,200,.06);border:1px dashed var(--gold-dim);
+  border-radius:4px;display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.grid-slot.filled{border-style:solid;border-color:var(--gold-dim);}
+.grid-slot.locked{border-style:solid;border-color:var(--gold);box-shadow:inset 0 0 10px rgba(212,175,55,.2);}
+.tray{
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+  min-height:60px;padding:8px;max-width:600px;
+}
+.tray-piece{
+  cursor:pointer;border-radius:4px;transition:all .2s;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.tray-piece.selected{outline:2px solid var(--gold);outline-offset:2px;transform:scale(1.05);}
+.tray-piece.placed{display:none;}
+
+/* 符文 */
+.rune-circle{position:relative;width:280px;height:280px;}
+.rune-node{
+  position:absolute;width:56px;height:56px;border-radius:50%;
+  background:radial-gradient(circle,rgba(40,55,85,.9),rgba(20,28,46,.95));
+  border:2px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .3s;font-size:20px;color:var(--paper-dim);
+}
+.rune-node.lit{background:radial-gradient(circle,rgba(212,175,55,.5),rgba(140,110,40,.8));border-color:var(--gold);color:#fff;box-shadow:0 0 20px rgba(212,175,55,.7);}
+.rune-node.wrong{animation:shake .4s;border-color:var(--danger);}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+.rune-center{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:90px;height:90px;border-radius:50%;
+  background:radial-gradient(circle,rgba(212,175,55,.15),transparent 70%);
+  display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--gold-soft);text-align:center;line-height:1.4;
+}
+
+/* 歸類 */
+.cate-zones{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.cate-zone{
+  min-width:130px;min-height:120px;padding:10px;border-radius:6px;
+  background:rgba(245,230,200,.05);border:1px dashed var(--gold-dim);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.cate-zone .zone-title{font-size:13px;color:var(--gold-soft);letter-spacing:2px;}
+.cate-zone.correct{border-style:solid;border-color:var(--ok);}
+.law-card{
+  background:linear-gradient(160deg,var(--paper),var(--paper-dim));color:var(--ink);
+  padding:8px 12px;border-radius:4px;font-size:12px;cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);transition:all .2s;max-width:160px;text-align:center;
+}
+.law-card.selected{outline:2px solid var(--gold);transform:scale(1.05);}
+.law-card.placed{opacity:.25;pointer-events:none;}
+
+/* 解密 */
+.decrypt-text{
+  font-size:16px;line-height:2.2;letter-spacing:2px;text-align:center;
+  max-width:560px;padding:16px;
+}
+.blank{
+  display:inline-block;min-width:60px;border-bottom:2px solid var(--gold);
+  color:var(--gold);padding:0 6px;margin:0 4px;cursor:pointer;
+}
+.blank.filled{color:var(--paper);}
+.blank.correct{color:var(--ok);border-color:var(--ok);}
+.blank.wrong{color:var(--danger);border-color:var(--danger);}
+.choices{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
+.choice-chip{
+  padding:8px 16px;background:var(--panel);border:1px solid var(--gold-dim);
+  border-radius:16px;cursor:pointer;font-size:13px;color:var(--paper);
+}
+.choice-chip:hover{border-color:var(--gold);color:var(--gold);}
+.choice-chip.used{opacity:.25;pointer-events:none;}
+
+/* ============ 彈窗：劇情 / 成功 ============ */
+.overlay{
+  position:fixed;inset:0;background:rgba(5,8,15,.85);z-index:100;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .4s;
+}
+.overlay.show{opacity:1;pointer-events:auto;}
+.dialog-box{
+  max-width:520px;width:100%;max-height:80vh;overflow-y:auto;
+  background:linear-gradient(180deg,rgba(25,35,58,.97),rgba(15,22,38,.97));
+  border:1px solid var(--gold-soft);border-radius:8px;padding:24px;
+  box-shadow:0 0 40px rgba(212,175,55,.2);
+}
+.dialog-box .dlg-speaker{color:var(--gold);font-size:14px;letter-spacing:3px;margin-bottom:10px;}
+.dialog-box .dlg-text{font-size:14px;line-height:2;min-height:80px;color:var(--paper);}
+.dialog-box .dlg-actions{margin-top:18px;display:flex;gap:10px;justify-content:flex-end;}
+.success-box{text-align:center;}
+.success-box .success-icon{width:80px;height:80px;margin:0 auto 12px;}
+.success-box h2{color:var(--gold);margin-bottom:10px;letter-spacing:4px;}
+.success-box p{color:var(--paper-dim);font-size:13px;line-height:1.8;margin-bottom:8px;}
+.success-box .reward{color:var(--gold);font-size:15px;margin:10px 0;}
+
+/* ============ 圖鑑 / 書靈 / 升級 ============ */
+.codex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;width:100%;max-width:720px;}
+.codex-card{
+  background:var(--panel);border:1px solid var(--panel-border);border-radius:6px;
+  padding:12px;cursor:pointer;transition:all .25s;
+}
+.codex-card:hover{border-color:var(--gold);}
+.codex-card.locked{opacity:.4;filter:grayscale(.8);}
+.codex-card .book-spine{height:60px;border-radius:3px;margin-bottom:8px;position:relative;overflow:hidden;}
+.codex-card .book-name{font-size:13px;letter-spacing:1px;}
+.codex-card .book-vault{font-size:10px;color:var(--paper-faded);margin-top:3px;}
+
+.spirit-list{width:100%;max-width:600px;display:flex;flex-direction:column;gap:12px;}
+.spirit-card{display:flex;gap:14px;padding:14px;align-items:center;}
+.spirit-card .spirit-portrait{
+  width:80px;height:80px;border-radius:50%;flex-shrink:0;
+  background:radial-gradient(circle,rgba(212,175,55,.25),rgba(20,28,46,.9));
+  border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;
+}
+.spirit-card .spirit-info h3{color:var(--gold);font-size:16px;letter-spacing:2px;margin-bottom:4px;}
+.spirit-card .spirit-info p{font-size:12px;color:var(--paper-dim);line-height:1.7;}
+
+.upgrade-list{width:100%;max-width:600px;display:flex;flex-direction:column;gap:10px;}
+.upgrade-item{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:14px;background:var(--panel);border:1px solid var(--panel-border);border-radius:6px;
+}
+.upgrade-item .up-info{flex:1;}
+.upgrade-item .up-name{font-size:14px;letter-spacing:1px;margin-bottom:3px;}
+.upgrade-item .up-desc{font-size:11px;color:var(--paper-faded);line-height:1.5;}
+.upgrade-item .up-cost{color:var(--gold);font-size:13px;white-space:nowrap;}
+
+.empty-hint{color:var(--paper-faded);text-align:center;padding:40px 20px;font-size:13px;line-height:2;}
+
+/* 提示 Toast */
+#toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  background:rgba(20,28,46,.95);border:1px solid var(--gold-soft);color:var(--gold);
+  padding:10px 20px;border-radius:20px;font-size:13px;z-index:200;
+  opacity:0;pointer-events:none;transition:opacity .3s;letter-spacing:1px;
+}
+#toast.show{opacity:1;}
+
+/* 滾動條 */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:3px;}
+
+@media(max-width:480px){
+  #screen-title h1{font-size:24px;}
+  .page-card{width:74px;height:104px;font-size:10px;}
+  .rune-circle{width:240px;height:240px;}
+  .rune-node{width:48px;height:48px;font-size:17px;}
+  .vault-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<div id="bgLayers"></div>
+<div class="vignette"></div>
+
+<!-- ========== 標題畫面 ========== -->
+<div id="screen-title" class="screen active">
+  <div class="library-mark">
+    <svg width="90" height="90" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="#d4af37" stroke-width="1" opacity=".5"/>
+      <circle cx="50" cy="50" r="36" fill="none" stroke="#d4af37" stroke-width=".5" opacity=".4"/>
+      <path d="M50 20 L50 80 M30 35 L70 35 M30 65 L70 65" stroke="#d4af37" stroke-width="1" opacity=".6"/>
+      <circle cx="50" cy="50" r="5" fill="#d4af37" opacity=".8"/>
+      <path d="M50 20 Q60 35 50 50 Q40 35 50 20" fill="#d4af37" opacity=".3"/>
+    </svg>
+  </div>
+  <h1 class="title-glow">魔法圖書館</h1>
+  <div style="color:var(--paper-faded);letter-spacing:6px;font-size:13px;margin-bottom:40px;">典 籍 歸 序</div>
+  <div class="btn-row">
+    <button class="btn primary" id="btnStart">開始遊戲</button>
+    <button class="btn" id="btnContinue" disabled>繼續遊戲</button>
+    <button class="btn" id="btnAbout">關於</button>
+  </div>
+</div>
+
+<!-- ========== 大廳 ========== -->
+<div id="screen-hall" class="screen">
+  <div class="topbar">
+    <span></span>
+    <div class="order-display">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8Z"/></svg>
+      <span>秩序值</span><span id="orderPoints">0</span>
+    </div>
+  </div>
+  <h2 class="hall-title title-glow">聖典圖書館．大廳</h2>
+  <div class="hall-sub">— 溯序之瞳已開，等待守典人歸來 —</div>
+  <div class="vault-grid" id="vaultGrid"></div>
+  <div class="bottom-nav">
+    <div class="nav-btn" id="navCodex">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h12a4 4 0 014 4v12H8a4 4 0 01-4-4V4z"/><path d="M4 4v12a4 4 0 004 4"/></svg>
+      <span>典籍圖鑑</span>
+    </div>
+    <div class="nav-btn" id="navSpirits">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      <span>書靈</span>
+    </div>
+    <div class="nav-btn" id="navUpgrade">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
+      <span>館藏升級</span>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 典庫關卡列表 ========== -->
+<div id="screen-vault" class="screen">
+  <div class="topbar">
+    <span class="back-btn" data-back="hall">‹ 返回大廳</span>
+    <div class="order-display">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8Z"/></svg>
+      <span id="vaultOrderPoints">0</span>
+    </div>
+  </div>
+  <h2 class="title-glow" id="vaultTitle" style="margin-bottom:4px;"></h2>
+  <div class="hall-sub" id="vaultDesc" style="margin-bottom:16px;"></div>
+  <div class="level-list" id="levelList"></div>
+</div>
+
+<!-- ========== 解謎畫面 ========== -->
+<div id="screen-puzzle" class="screen">
+  <div class="topbar">
+    <span class="back-btn" id="puzzleBack">‹ 放棄</span>
+    <div class="order-display"><span id="puzzleOrder">0</span></div>
+  </div>
+  <div class="puzzle-header">
+    <div class="puzzle-book" id="puzzleBook"></div>
+    <div class="puzzle-disorder" id="puzzleDisorder"></div>
+    <div class="puzzle-hint" id="puzzleHint"></div>
+  </div>
+  <div class="puzzle-area" id="puzzleArea"></div>
+  <div class="puzzle-actions">
+    <button class="btn small" id="btnResetPuzzle">重置</button>
+  </div>
+</div>
+
+<!-- ========== 圖鑑 / 書靈 / 升級 共用容器 ========== -->
+<div id="screen-collection" class="screen">
+  <div class="topbar">
+    <span class="back-btn" data-back="hall">‹ 返回大廳</span>
+    <div class="order-display"><span id="colOrder">0</span></div>
+  </div>
+  <h2 class="title-glow" id="colTitle" style="margin-bottom:16px;"></h2>
+  <div id="colBody" style="width:100%;max-width:720px;"></div>
+</div>
+
+<!-- ========== 對話彈窗 ========== -->
+<div class="overlay" id="dialogOverlay">
+  <div class="dialog-box">
+    <div class="dlg-speaker" id="dlgSpeaker"></div>
+    <div class="dlg-text" id="dlgText"></div>
+    <div class="dlg-actions">
+      <button class="btn primary small" id="dlgNext">繼續</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 成功彈窗 ========== -->
+<div class="overlay" id="successOverlay">
+  <div class="dialog-box success-box">
+    <div class="success-icon">
+      <svg viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="36" fill="none" stroke="#d4af37" stroke-width="1.5" opacity=".6"/>
+        <path d="M25 40 L36 52 L58 30" fill="none" stroke="#d4af37" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h2>典籍歸序完成</h2>
+    <p id="successText"></p>
+    <div class="reward" id="successReward"></div>
+    <div class="dlg-actions" style="justify-content:center;">
+      <button class="btn primary" id="successNext">前往</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   魔法圖書館：典籍歸序 — 純原生 JS
+   ============================================================ */
+
+/* ---------- SVG 圖標庫（禁止 emoji） ---------- */
+const ICONS = {
+  element: `<svg viewBox="0 0 48 48" fill="none" stroke="#d4af37" stroke-width="1.5">
+    <path d="M24 6 L30 20 L44 20 L33 29 L37 43 L24 35 L11 43 L15 29 L4 20 L18 20 Z" fill="rgba(212,175,55,.15)"/>
+  </svg>`,
+  star: `<svg viewBox="0 0 48 48" fill="none" stroke="#d4af37" stroke-width="1.5">
+    <circle cx="24" cy="24" r="16" fill="rgba(212,175,55,.1)"/>
+    <circle cx="24" cy="24" r="3" fill="#d4af37"/>
+    <path d="M24 8v4M24 36v4M8 24h4M36 24h4M13 13l3 3M32 32l3 3M13 35l3-3M32 16l3-3"/>
+  </svg>`,
+  life: `<svg viewBox="0 0 48 48" fill="none" stroke="#d4af37" stroke-width="1.5">
+    <path d="M24 40 C24 28 16 22 10 22 C10 32 16 40 24 40 Z" fill="rgba(212,175,55,.15)"/>
+    <path d="M24 40 C24 28 32 22 38 22 C38 32 32 40 24 40 Z" fill="rgba(212,175,55,.15)"/>
+    <path d="M24 40 V20"/>
+  </svg>`,
+  ancient: `<svg viewBox="0 0 48 48" fill="none" stroke="#d4af37" stroke-width="1.5">
+    <path d="M8 40 L24 10 L40 40 Z" fill="rgba(212,175,55,.12)"/>
+    <path d="M16 40 L24 24 L32 40"/>
+    <circle cx="24" cy="20" r="2" fill="#d4af37"/>
+  </svg>`,
+  forbidden: `<svg viewBox="0 0 48 48" fill="none" stroke="#b85450" stroke-width="1.5">
+    <path d="M24 6 L40 14 V28 C40 37 32 42 24 44 C16 42 8 37 8 28 V14 Z" fill="rgba(184,84,80,.12)"/>
+    <path d="M18 22 L30 32 M30 22 L18 32"/>
+  </svg>`,
+  locked: `<svg viewBox="0 0 24 24" fill="none" stroke="#8a7a55" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>`,
+  starFilled: `<svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z" fill="#d4af37"/></svg>`,
+  starEmpty: `<svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z" fill="#4a4438"/></svg>`,
+};
+
+/* ---------- 五大典庫 ---------- */
+const VAULTS = [
+  { id:'element', name:'元素典庫', icon:ICONS.element, color:'#d4af37',
+    desc:'風、火、水、土、雷——構成世界的五大基礎法則。', need:0 },
+  { id:'star', name:'星辰典庫', icon:ICONS.star, color:'#9fb8d9',
+    desc:'天象、時序、晝夜與星軌，記錄天空運行的規律。', need:3 },
+  { id:'life', name:'生靈典庫', icon:ICONS.life, color:'#8fbf8f',
+    desc:'萬物生機、種族存續、自然生態——最温柔的一卷。', need:3 },
+  { id:'ancient', name:'古秘典庫', icon:ICONS.ancient, color:'#c9a96e',
+    desc:'上古文明、圖書館起源、史前魔法的緘默記憶。', need:3 },
+  { id:'forbidden', name:'禁忌典庫', icon:ICONS.forbidden, color:'#b85450',
+    desc:'高階法則、戰爭本源、空間秘術——封印之下的真相。', need:3 },
+];
+
+/* ---------- 關卡資料（24 關） ---------- */
+/* type: order | piece | rune | cate | decrypt | shelf */
+const LEVELS = [
+  /* ===== 元素典庫 ===== */
+  { id:'el1', vault:'element', name:'《風之輕語》', type:'order', disorder:'排序錯亂',
+    reward:30, hint:'依頁碼順序，重新排列這卷關於風的詩篇。',
+    pages:[
+      {n:3,text:'風穿過石廊，帶來遠海的氣息。'},
+      {n:1,text:'在世界初始之際，風是第一聲歎息。'},
+      {n:4,text:'它無形，卻塑造了沙丘與麥浪。'},
+      {n:2,text:'它輕吻葉尖，喚醒沉睡的種子。'},
+    ],
+    storyBefore:'（寂靜中，一卷泛黃的書頁緩緩飄落到你腳邊。頁上的文字散亂了——看來是戰火動盪所致。）',
+    storyAfter:'風之章歸序完畢。你彷彿聽見圖書館深處，有一縷輕風穿過書架。',
+    codex:{ desc:'記述風元素的本質：自由、無常、卻是萬物呼吸的起點。', fragment:'上古守典人曾說，風是圖書館的第一個書靈。' }
+  },
+  { id:'el2', vault:'element', name:'《火水相對》', type:'cate', disorder:'屬性混雜',
+    reward:35, hint:'將卡片歸入對應的元素屬性。',
+    categories:[
+      {id:'fire', name:'火', color:'#b85450'},
+      {id:'water', name:'水', color:'#5a8ab8'},
+    ],
+    cards:[
+      {text:'燃燒的烈焰', cate:'fire'},
+      {text:'深邃的海洋', cate:'water'},
+      {text:'熔巖之心', cate:'fire'},
+      {text:'滴落的晨露', cate:'water'},
+      {text:'篝火旁的歌謠', cate:'fire'},
+      {text:'溪水的低語', cate:'water'},
+    ],
+    storyBefore:'戰火將火與水的篇章攪混在一起。你需要溯序之瞳，將它們重新分開。',
+    storyAfter:'水火歸位。它們雖彼此相剋，卻共同維持著大陸的溫度與平衡。',
+    codex:{ desc:'闡明火與水這對雙生法則的相生相剋。', fragment:'傳聞第一次大戰的導火線，正是火元素失控。' }
+  },
+  { id:'el3', vault:'element', name:'《火之頌歌》', type:'order', disorder:'排序錯亂',
+    reward:40, hint:'依詩句脈絡排列：從星火到燎原，再到熄滅。',
+    pages:[
+      {n:3,text:'餘燼溫熱，孕育下一個春天。'},
+      {n:1,text:'一點星火，在黑暗中亮起。'},
+      {n:4,text:'最終，它化作灰烬，回歸大地。'},
+      {n:2,text:'它貪婪地吞噬柴薪，化作燎原之勢。'},
+    ],
+    storyBefore:'這卷火之頌歌的頁面被風吹散了。試著恢復它原本的吟唱順序。',
+    storyAfter:'頌歌恢復了。火焰循環——誕生、狂熱、熄滅、重生——這便是火的法則。',
+    codex:{ desc:'以詩歌形式記錄火焰的生命週期。', fragment:'火焰書靈「炎紋」據說藏於此卷之中。' }
+  },
+  { id:'el4', vault:'element', name:'《雷土之界》', type:'cate', disorder:'屬性混雜',
+    reward:45, hint:'雷與土的法則卡片散落各處，請歸位。',
+    categories:[
+      {id:'thunder', name:'雷', color:'#c9a96e'},
+      {id:'earth', name:'土', color:'#8a7a55'},
+    ],
+    cards:[
+      {text:'劈開烏雲的電光', cate:'thunder'},
+      {text:'厚重的山脈', cate:'earth'},
+      {text:'瞬間的轟鳴', cate:'thunder'},
+      {text:'沉默的礦脈', cate:'earth'},
+      {text:'驚蟄的春雷', cate:'thunder'},
+      {text:'承載萬物的大地', cate:'earth'},
+    ],
+    storyBefore:'雷與土——動與靜的極端。它們的篇章被戰力震散了。',
+    storyAfter:'雷擊入土，生出金屬；土承載雷，養育山川。五大元素至此齊全。',
+    codex:{ desc:'記述雷與土的互動：雷賦予土金屬，土承載雷之威。', fragment:'五大元素齊全後，下一典庫的封印隱隱鬆動。' }
+  },
+  { id:'el5', vault:'element', name:'《五行循環圖》', type:'order', disorder:'排序錯亂',
+    reward:55, hint:'依五行相生之序：風生火，生火生土，土生雷，雷生水，水生風。',
+    pages:[
+      {n:3,text:'土蘊藏礦脈，喚醒雷的蟄伏。'},
+      {n:5,text:'水滋潤萬物，風由此而生。'},
+      {n:1,text:'風的流動，摩擦出最初的火。'},
+      {n:4,text:'雷擊雲層，化作傾盆的雨。'},
+      {n:2,text:'火燃盡萬物，塵埃歸於土。'},
+    ],
+    storyBefore:'這是元素典庫最深處的一卷。它記載五大元素如何循環不息。',
+    storyAfter:'五行循環恢復運轉。你感到圖書館的光脈微微一振——星辰典庫的門開了。',
+    codex:{ desc:'元素循環的核心圖譜，是魔法大陸法則的基石。', fragment:'完成此卷，星辰典庫的封印已然解鎖。' }
+  },
+
+  /* ===== 星辰典庫 ===== */
+  { id:'st1', vault:'star', name:'《晝之印》', type:'rune', disorder:'封印鬆動',
+    reward:50, hint:'依序點亮：日輪、天光、白晝、晨曦。',
+    runes:[
+      {id:'sun', label:'日輪', order:1},
+      {id:'light', label:'天光', order:2},
+      {id:'day', label:'白晝', order:3},
+      {id:'dawn', label:'晨曦', order:4},
+    ],
+    storyBefore:'星辰典庫的封印被暴戾魔力侵蝕。你需要以正確順序點亮符文，驅散污染。',
+    storyAfter:'白晝符文依次亮起，一道溫和的光湧入天窗。',
+    codex:{ desc:'記述白晝四象的運行規律。', fragment:'傳說太陽書靈守護著這一印。' }
+  },
+  { id:'st2', vault:'star', name:'《星圖殘文》', type:'decrypt', disorder:'塵封失語',
+    reward:55, hint:'根據「北斗主死生」的線索填入缺字。',
+    template:'北斗七星，主掌____與____，為夜行旅人指引方向。',
+    blanks:[
+      {answer:'生', options:['生','死','夢','醒']},
+      {answer:'死', options:['戰','死','離','別']},
+    ],
+    storyBefore:'這段星文被時光磨去了關鍵字。運用你對天象的記憶填補。',
+    storyAfter:'星文完整了。你彷彿看見北上空北斗閃耀。',
+    codex:{ desc:'北斗七星的職掌文獻。', fragment:'古代航海者與旅人皆仰賴此卷。' }
+  },
+  { id:'st3', vault:'star', name:'《夜星軌》', type:'rune', disorder:'封印鬆動',
+    reward:60, hint:'依夜星運行次序：銀河、織女、流光、極星、殞落。',
+    runes:[
+      {id:'milky', label:'銀河', order:1},
+      {id:'weaver', label:'織女', order:2},
+      {id:'meteor', label:'流光', order:3},
+      {id:'pole', label:'極星', order:4},
+      {id:'fall', label:'殞落', order:5},
+    ],
+    storyBefore:'夜之符文被污染得更深了。靜下心，感受星軌的脈動。',
+    storyAfter:'五星連珠般亮起，天窗之外，夜空為之一清。',
+    codex:{ desc:'記錄一夜之間星辰運行的軌跡。', fragment:'極星永恆不動，是航海者的最後錨點。' }
+  },
+  { id:'st4', vault:'star', name:'《月相之詩》', type:'decrypt', disorder:'塵封失語',
+    reward:65, hint:'月有陰晴圓缺——填入四個階段。',
+    template:'月相有四：新月如____，上弦如____，滿月如____，下弦如____。',
+    blanks:[
+      {answer:'鉤', options:['鉤','盤','鏡','輪']},
+      {answer:'弓', options:['璧','弓','輪','鉞']},
+      {answer:'鏡', options:['鉤','弓','鏡','眉']},
+      {answer:'璧', options:['璧','盤','弓','刃']},
+    ],
+    storyBefore:'關於月亮的詩句缺了四個比喻。想一想月亮在不同時的形狀。',
+    storyAfter:'月相之詩完整了。月光透過高窗，靜靜灑在書頁上。',
+    codex:{ desc:'月相四階段的文學記錄。', fragment:'月之書靈「霜娥」棲居於此卷。', spirit:'moon' }
+  },
+  { id:'st5', vault:'star', name:'《時序之輪》', type:'rune', disorder:'封印鬆動',
+    reward:80, hint:'四季之序：春、夏、秋、冬，最後歸於春。',
+    runes:[
+      {id:'spring', label:'春', order:1},
+      {id:'summer', label:'夏', order:2},
+      {id:'autumn', label:'秋', order:3},
+      {id:'winter', label:'冬', order:4},
+      {id:'spring2', label:'春', order:5},
+    ],
+    storyBefore:'這是星辰典庫的核心——時序之輪。春夏秋冬循環不息，是世界的呼吸。',
+    storyAfter:'時序之輪重新轉動。你感到生靈典庫的方向傳來溫柔的生機。',
+    codex:{ desc:'四季循環的樞紐文獻。', fragment:'時序運轉之處，生靈得以繁衍。' }
+  },
+
+  /* ===== 生靈典庫 ===== */
+  { id:'li1', vault:'life', name:'《嫩芽初綻》', type:'piece', disorder:'殘缺破損',
+    reward:55, hint:'拖動碎片，拼合這片初綻的嫩芽插畫。',
+    gridSize:2, palette:['#7fae6e','#5a8a5a','#a8c98a','#3a6a3a'],
+    storyBefore:'生靈典庫裡空氣潮濕而溫暖。這卷關於植物初生的畫頁碎成了四塊。',
+    storyAfter:'嫩芽在你掌中重新舒展。你聽見極輕微的、生長的聲音。',
+    codex:{ desc:'記錄一株植物從種子到抽芽的瞬間。', fragment:'生靈書靈都溫柔而害羞。' }
+  },
+  { id:'li2', vault:'life', name:'《草本圖鑑》', type:'shelf', disorder:'排序錯亂',
+    reward:60, hint:'依書籍顏色歸位：綠皮放第一格，棕皮放第二格。',
+    shelfSlots:[
+      {label:'綠皮．草本'},
+      {label:'棕皮．木本'},
+    ],
+    books:[
+      {name:'艾草', color:'#5a8a5a', slot:0},
+      {name:'鬱金香', color:'#7fae6e', slot:0},
+      {name:'蒲公英', color:'#6a9a6a', slot:0},
+      {name:'橡樹', color:'#6a4a3a', slot:1},
+      {name:'梧桐', color:'#7a5a4a', slot:1},
+      {name:'松', color:'#5a4030', slot:1},
+    ],
+    storyBefore:'草本與木本的書籍被混放了。看著書脊的顏色，把它們放回對的格子。',
+    storyAfter:'圖鑑整齊了。空氣中彷彿浮起淡淡的草木香。',
+    codex:{ desc:'大陸常見草本與木本植物的圖鑑。', fragment:'每一株草都有自己的法則。' }
+  },
+  { id:'li3', vault:'life', name:'《獸跡圖》', type:'piece', disorder:'殘缺破損',
+    reward:65, hint:'拼合這張野獸足跡的圖譜。',
+    gridSize:3, palette:['#8a7a55','#6a5a45','#9a8a65','#5a4a35','#7a6a50','#aa9a75','#4a3a2a','#8a7050','#6b5b40'],
+    storyBefore:'這張獸跡圖被撕裂成九塊。試著拼回野獸在森林裡留下的印記。',
+    storyAfter:'完整的獸跡圖攤開在你面前。你彷彿能感覺到森林的脈動。',
+    codex:{ desc:'記錄大陸各類野獸的足跡與習性。', fragment:'古老的守林人能藉此讀懂森林的對話。' }
+  },
+  { id:'li4', vault:'life', name:'《羽族卷》', type:'shelf', disorder:'排序錯亂',
+    reward:70, hint:'依棲息地歸位：天空鳥放第一格，水鳥放第二格，林鳥放第三格。',
+    shelfSlots:[
+      {label:'天空．飛鷹'},
+      {label:'水澤．游禽'},
+      {label:'林間．鳴禽'},
+    ],
+    books:[
+      {name:'雄鷹', color:'#8a7a55', slot:0},
+      {name:'雲雀', color:'#9a8a65', slot:0},
+      {name:'天鵝', color:'#c9c9c9', slot:1},
+      {name:'鴛鴦', color:'#b8a88a', slot:1},
+      {name:'畫眉', color:'#6a8a6a', slot:2},
+      {name:'夜鶯', color:'#5a7a5a', slot:2},
+    ],
+    storyBefore:'羽族的書籍依棲息地分類。戰火打亂了它們的位置。',
+    storyAfter:'羽族卷歸位。你彷彿聽見遠處傳來一聲清亮的鳥啼。',
+    codex:{ desc:'記錄大陸各類飛鳥的習性與歌聲。', fragment:'羽族書靈「青羽」據說能模仿所有鳥鳴。', spirit:'bird' }
+  },
+  { id:'li5', vault:'life', name:'《森林共生》', type:'piece', disorder:'殘缺破損',
+    reward:85, hint:'拼合這幅森林生態的全景圖。',
+    gridSize:3, palette:['#3a6a3a','#5a8a5a','#7fae6e','#2a4a2a','#4a7a4a','#6a9a6a','#8ab88a','#1a3a1a','#5a9a5a'],
+    storyBefore:'這是生靈典庫最深處的畫卷——整座森林的共生網絡。它碎成了九塊。',
+    storyAfter:'完整的森林在你眼前重現：樹、菌、獸、蟲、水脈交織成一張生命之網。',
+    codex:{ desc:'森林生態的全景圖譜，展現物種間的共生關係。', fragment:'森林是大陸的肺，也是魔法的源頭之一。' }
+  },
+
+  /* ===== 古秘典庫 ===== */
+  { id:'an1', vault:'ancient', name:'《圖書館起源》', type:'decrypt', disorder:'塵封失語',
+    reward:80, hint:'這座圖書館由三位____所建，目的是保存世界的一切____。',
+    template:'這座圖書館，由三位____所建，目的是保存世界的一切____。',
+    blanks:[
+      {answer:'守典人', options:['魔法師','守典人','帝王','工匠']},
+      {answer:'法則', options:['寶藏','歷史','法則','戰爭']},
+    ],
+    storyBefore:'你走進古秘典庫。空氣裡有古老塵埃的氣味。這卷羊皮紙記載著圖書館本身的起源。',
+    storyAfter:'原來——這座圖書館並非人所建，而是由三位「守典人」以生命縫合而成。',
+    codex:{ desc:'聖典圖書館的創建史。', fragment:'三位守典人：溯序之瞳、縫界之手、靜默之耳。' }
+  },
+  { id:'an2', vault:'ancient', name:'《大戰紀年》', type:'order', disorder:'排序錯亂',
+    reward:85, hint:'依時間先後排列這段第一次魔法世界大戰的紀年。',
+    pages:[
+      {n:3,text:'第三年：邊境點燃戰火，元素失控。'},
+      {n:1,text:'第一年：禁忌秘法被盜，平衡開始崩壞。'},
+      {n:4,text:'第五年：圖書館封閉，典籍四散。'},
+      {n:2,text:'第二年：諸國結盟，法則戰爭爆發。'},
+    ],
+    storyBefore:'這是關於「第一次魔法世界大戰」的紀年。頁面散亂——也許是某人刻意為之。',
+    storyAfter:'紀年還原：戰爭始於禁忌秘法外流，終於圖書館自我封印。你，是繼任的守典人。',
+    codex:{ desc:'第一次魔法世界大戰的編年史。', fragment:'戰爭並非終點，而是圖書館封閉的起點。' }
+  },
+  { id:'an3', vault:'ancient', name:'《文明遺緒》', type:'cate', disorder:'屬性混雜',
+    reward:90, hint:'將上古文明的遺緒依類別歸位。',
+    categories:[
+      {id:'magic', name:'魔法遺產', color:'#9fb8d9'},
+      {id:'craft', name:'工藝遺產', color:'#c9a96e'},
+    ],
+    cards:[
+      {text:'浮空城堡', cate:'magic'},
+      {text:'星象儀', cate:'craft'},
+      {text:'時空法阵', cate:'magic'},
+      {text:'琉璃長明燈', cate:'craft'},
+      {text:'記憶水晶', cate:'magic'},
+      {text:'水力印刷機', cate:'craft'},
+    ],
+    storyBefore:'上古文明留下的遺緒被混在一起。哪些是魔法，哪些是工藝？',
+    storyAfter:'你逐漸理解：上古文明並非只有魔法，他們也以工藝支撐著魔法的日常。',
+    codex:{ desc:'上古文明遺產的分類目錄。', fragment:'工藝與魔法的結合，是那個時代的輝煌。' }
+  },
+  { id:'an4', vault:'ancient', name:'《史前契約》', type:'piece', disorder:'戰火紊亂',
+    reward:120, hint:'拼合這張史前時代諸神與凡人簽下的契約。',
+    gridSize:3, palette:['#c9a96e','#a8894e','#8a6f3e','#d4af37','#b8975a','#9a7f4e','#e8c97a','#7a5f2e','#b8a06a'],
+    storyBefore:'這是古秘典庫最深處的一卷——《史前契約》。相傳世界的法則本質，都寫在這張契約上。它被戰火撕碎了。',
+    storyAfter:'契約重現：「凡人守圖書館，諸神守星軌，萬物守循環。」——這便是大陸法則的根源。禁忌典庫的門，應聲而開。',
+    codex:{ desc:'諸神與凡人的史前契約，大陸法則的源頭。', fragment:'你終於明白，為何你是「繼任管理員」。', spirit:'ancient' }
+  },
+
+  /* ===== 禁忌典庫 ===== */
+  { id:'fb1', vault:'forbidden', name:'《戰火封印》', type:'rune', disorder:'封印鬆動',
+    reward:120, hint:'依戰火平息之序：風熄、水澆、土掩、雷寂。',
+    runes:[
+      {id:'wind', label:'風熄', order:1},
+      {id:'water', label:'水澆', order:2},
+      {id:'earth', label:'土掩', order:3},
+      {id:'thunder', label:'雷寂', order:4},
+    ],
+    storyBefore:'禁忌典庫彌漫著凝重的氣息。這卷封印著當年戰火的核心——你必須小心。',
+    storyAfter:'戰火封印重新鎖緊。你感到胸前的「溯序之瞳」微微發燙。',
+    codex:{ desc:'第一次大戰終戰的封印咒文。', fragment:'戰火並未真正消失，只是被封印。' }
+  },
+  { id:'fb2', vault:'forbidden', name:'《空間秘術》', type:'decrypt', disorder:'塵封失語',
+    reward:130, hint:'填入空間法則的本質。',
+    template:'空間並非____，而是法則織成的____。',
+    blanks:[
+      {answer:'虛無', options:['虛無','實體','永恆','虛空']},
+      {answer:'織錦', options:['迷宮','織錦','牢籠','夢境']},
+    ],
+    storyBefore:'空間秘術——這是連上古魔法師都諱莫如深的領域。',
+    storyAfter:'空間是織錦，而非虛無。你第一次窺見圖書館「時空夾縫」的本質。',
+    codex:{ desc:'空間法則的核心文獻。', fragment:'圖書館本身就建在時空夾縫之中。' }
+  },
+  { id:'fb3', vault:'forbidden', name:'《禁忌書架》', type:'shelf', disorder:'排序錯亂',
+    reward:140, hint:'依書籍屬性歸位：紅皮（戰爭）、紫皮（靈魂）、黑皮（虛空）。',
+    shelfSlots:[
+      {label:'赤．戰爭'},
+      {label:'紫．靈魂'},
+      {label:'黑．虛空'},
+    ],
+    books:[
+      {name:'血誓卷', color:'#8a3030', slot:0},
+      {name:'征伐錄', color:'#a04040', slot:0},
+      {name:'還魂書', color:'#6a4a8a', slot:1},
+      {name:'輪迴篇', color:'#7a5a9a', slot:1},
+      {name:'深淵錄', color:'#2a2a3a', slot:2},
+      {name:'虛空契', color:'#1a1a2a', slot:2},
+    ],
+    storyBefore:'禁忌書架上的書籍散發著壓抑的氣息。它們危險，卻是真相的一部分。',
+    storyAfter:'你將禁忌之書歸位。圖書館並不排斥這些書——它只是需要被好好對待。',
+    codex:{ desc:'禁忌典籍的分類目錄：戰爭、靈魂、虛空。', fragment:'禁忌並非邪惡，而是尚未被理解的法則。' }
+  },
+  { id:'fb4', vault:'forbidden', name:'《終極法則》', type:'cate', disorder:'屬性混雜',
+    reward:150, hint:'將終極法則歸入：時間、命運、虛無。',
+    categories:[
+      {id:'time', name:'時間', color:'#9fb8d9'},
+      {id:'fate', name:'命運', color:'#c9a96e'},
+      {id:'void', name:'虛無', color:'#6a6a8a'},
+    ],
+    cards:[
+      {text:'不可逆的奔流', cate:'time'},
+      {text:'既定的軌跡', cate:'fate'},
+      {text:'萬物的終點', cate:'void'},
+      {text:'季節的循環', cate:'time'},
+      {text:'偶然與必然', cate:'fate'},
+      {text:'存在的反面', cate:'void'},
+    ],
+    storyBefore:'這是禁忌典庫最深處的法則——時間、命運、虛無。它們彼此交織，構成世界的底色。',
+    storyAfter:'你將終極法則歸位。整座圖書館開始發出低沉而和諧的共鳴。',
+    codex:{ desc:'時間、命運、虛無三大終極法則的論述。', fragment:'理解終極法則者，方可成為真正的守典人。' }
+  },
+  { id:'fb5', vault:'forbidden', name:'《世界契約》', type:'piece', disorder:'戰火紊亂',
+    reward:300, hint:'最終卷——拼合這份世界契約的完整版。',
+    gridSize:3, palette:['#d4af37','#b8975a','#8a6f3e','#c9a96e','#e8c97a','#a8894e','#f5e6c8','#9a7f4e','#7a5f2e'],
+    storyBefore:'最終卷。《世界契約》——第一次大戰終戰時，諸神與守典人重新簽下的契約。它被撕碎在禁忌深處。',
+    storyAfter:'契約重現：「守典人歸位，典籍歸序，大陸法則重啟。」——你站在圖書館中央，看見所有書架同時亮起。大陸的法則，因你而重新流轉。',
+    codex:{ desc:'第一次大戰終戰後的世界契約。大陸法則重啟的見證。', fragment:'你——新任守典人——終於完成了使命。', spirit:'final' }
+  },
+];
+
+/* ---------- 書靈資料 ---------- */
+const SPIRITS = {
+  moon:{ name:'霜娥', title:'月之書靈', desc:'棲居於月相之詩卷中。溫柔而沉默，只在滿月之夜現身，輕輕撫摸書頁上的月光。' },
+  bird:{ name:'青羽', title:'羽族書靈', desc:'棲居於羽族卷。能模仿所有鳥鳴，歌聲裡藏著森林最深的秘密。', },
+  ancient:{ name:'溯序', title:'圖書館書靈', desc:'由三位初代守典人意志凝聚而成。它等待了千年，只為等待新任繼任者。' },
+  final:{ name:'萬序', title:'終焉書靈', desc:'世界契約的化身。它不說話，只是靜靜看著你——因為你已是新的守典人。' },
+};
+
+/* ---------- 升級項目 ---------- */
+const UPGRADES = [
+  { id:'dust', name:'除塵咒', desc:'每關秩序值 +10%', cost:80, max:3 },
+  { id:'glow', name:'法則微光', desc:'解謎提示更清晰（高亮正確路徑）', cost:120, max:1 },
+  { id:'shelf', name:'開啟深藏區', desc:'解鎖額外的典藏角落（純裝飾）', cost:200, max:1 },
+  { id:'memory', name:'記憶書籤', desc:'解謎失敗不扣秩序值（實用加持）', cost:150, max:1 },
+];
+
+/* ---------- 存檔 ---------- */
+const SAVE_KEY = 'magicLibrarySave_v1';
+let S = loadGame();
+
+function loadGame(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw){ return Object.assign(defaultState(), JSON.parse(raw)); }
+  }catch(e){}
+  return defaultState();
+}
+function defaultState(){
+  return {
+    orderPoints:0,
+    completed:{},        // levelId -> stars
+    codex:{},            // bookId -> true
+    spirits:{},          // spiritId -> true
+    upgrades:{},         // upId -> level
+    muted:false,
+    hasSave:false,
+  };
+}
+function saveGame(){
+  S.hasSave = true;
+  localStorage.setItem(SAVE_KEY, JSON.stringify(S));
+}
+
+/* ---------- 音訊（Web Audio API） ---------- */
+let audioCtx = null;
+function ac(){
+  if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  return audioCtx;
+}
+function tone(freq, dur=0.15, type='sine', vol=0.08){
+  if(S.muted) return;
+  const c = ac(); if(!c) return;
+  const o = c.createOscillator(); const g = c.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime+dur);
+}
+function sfxPickup(){ tone(660,0.08,'triangle',0.05); }
+function sfxPlace(){ tone(440,0.1,'triangle',0.06); }
+function sfxCorrect(){ tone(880,0.15,'sine',0.08); setTimeout(()=>tone(1320,0.2,'sine',0.07),100); }
+function sfxWrong(){ tone(180,0.2,'sawtooth',0.05); }
+function sfxSuccess(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.25,'sine',0.09),i*120)); }
+function sfxPage(){ tone(220,0.06,'triangle',0.04); }
+
+/* ---------- 背景動畫：飄浮書頁與光塵 ---------- */
+function initBg(){
+  const layer = document.getElementById('bgLayers');
+  // 光塵
+  for(let i=0;i<30;i++){
+    const d = document.createElement('div');
+    d.className = 'dust';
+    const size = Math.random()*4+2;
+    d.style.width = size+'px'; d.style.height = size+'px';
+    d.style.left = Math.random()*100+'%';
+    d.style.top = Math.random()*100+'%';
+    d.style.animationDuration = (Math.random()*6+4)+'s';
+    d.style.animationDelay = (Math.random()*5)+'s';
+    layer.appendChild(d);
+  }
+  // 飄浮書頁（用 SVG 折頁形狀）
+  for(let i=0;i<8;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.innerHTML = `<svg width="${20+Math.random()*16}" height="${26+Math.random()*20}" viewBox="0 0 24 32">
+      <rect x="2" y="2" width="20" height="28" fill="#f5e6c8" opacity="0.5"/>
+      <line x1="6" y1="8" x2="18" y2="8" stroke="#8a7a55" stroke-width="0.5" opacity="0.6"/>
+      <line x1="6" y1="13" x2="18" y2="13" stroke="#8a7a55" stroke-width="0.5" opacity="0.6"/>
+      <line x1="6" y1="18" x2="14" y2="18" stroke="#8a7a55" stroke-width="0.5" opacity="0.6"/>
+    </svg>`;
+    p.style.left = Math.random()*100+'%';
+    p.style.animationDuration = (Math.random()*20+25)+'s';
+    p.style.animationDelay = (Math.random()*20)+'s';
+    layer.appendChild(p);
+  }
+}
+
+/* ---------- 畫面切換 ---------- */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  // 滾動到頂
+  el.scrollTop = 0;
+}
+
+/* ---------- Toast ---------- */
+let toastTimer=null;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+/* ---------- 大廳渲染 ---------- */
+function completedCount(vaultId){
+  return LEVELS.filter(l=>l.vault===vaultId && S.completed[l.id]).length;
+}
+function totalCount(vaultId){
+  return LEVELS.filter(l=>l.vault===vaultId).length;
+}
+function isVaultUnlocked(idx){
+  if(idx===0) return true;
+  const prev = VAULTS[idx-1];
+  // 需要在前一典庫完成 currentVault.need 關
+  return completedCount(prev.id) >= VAULTS[idx].need;
+}
+
+function renderHall(){
+  document.getElementById('orderPoints').textContent = S.orderPoints;
+  const grid = document.getElementById('vaultGrid');
+  grid.innerHTML = '';
+  VAULTS.forEach((v,i)=>{
+    const unlocked = isVaultUnlocked(i);
+    const c = completedCount(v.id), t = totalCount(v.id);
+    const card = document.createElement('div');
+    card.className = 'vault-card' + (unlocked?'':' locked');
+    card.innerHTML = `
+      ${unlocked?'':`<span class="lock-badge">${ICONS.locked}</span>`}
+      <div class="vault-icon">${v.icon}</div>
+      <div class="vault-name">${v.name}</div>
+      <div class="vault-desc">${v.desc}</div>
+      <div class="vault-progress">典籍 ${c}/${t}${unlocked?'':`　解鎖需前庫 ${v.need} 關`}</div>
+    `;
+    if(unlocked){
+      card.onclick = ()=>{ sfxPage(); openVault(i); };
+    }
+    grid.appendChild(card);
+  });
+  document.getElementById('btnContinue').disabled = !S.hasSave;
+}
+
+/* ---------- 典庫關卡列表 ---------- */
+let currentVaultIdx = 0;
+function openVault(idx){
+  currentVaultIdx = idx;
+  const v = VAULTS[idx];
+  document.getElementById('vaultTitle').textContent = v.name;
+  document.getElementById('vaultDesc').textContent = v.desc;
+  document.getElementById('vaultOrderPoints').textContent = S.orderPoints;
+  const list = document.getElementById('levelList');
+  list.innerHTML = '';
+  LEVELS.filter(l=>l.vault===v.id).forEach((lv,i)=>{
+    const done = S.completed[lv.id];
+    const prevDone = i===0 || S.completed[LEVELS.filter(x=>x.vault===v.id)[i-1].id];
+    const unlocked = prevDone || done;
+    const card = document.createElement('div');
+    card.className = 'level-card' + (unlocked?'':' locked');
+    let starsHtml = '';
+    if(done){
+      starsHtml = [1,2,3].map(s=>s<=done?ICONS.starFilled:ICONS.starEmpty).join('');
+    } else {
+      starsHtml = `<span style="color:var(--paper-faded);font-size:11px;">${unlocked?'未通關':'未解鎖'}</span>`;
+    }
+    card.innerHTML = `
+      <div class="lv-icon">${v.icon}</div>
+      <div class="lv-info">
+        <div class="lv-name">${lv.name}</div>
+        <div class="lv-meta">錯亂類型：${lv.disorder}　·　獎勵 ${lv.reward}</div>
+      </div>
+      <div class="lv-stars">${starsHtml}</div>
+    `;
+    if(unlocked){
+      card.onclick = ()=>startLevel(lv);
+    }
+    list.appendChild(card);
+  });
+  show('screen-vault');
+}
+
+/* ---------- 關卡進行 ---------- */
+let currentLevel = null;
+let puzzleState = null;
+
+function startLevel(lv){
+  currentLevel = lv;
+  show('screen-puzzle');
+  document.getElementById('puzzleBook').textContent = lv.name;
+  document.getElementById('puzzleDisorder').textContent = '錯亂類型：' + lv.disorder;
+  document.getElementById('puzzleHint').textContent = lv.hint;
+  document.getElementById('puzzleOrder').textContent = S.orderPoints;
+  // 劇情前對話
+  showDialog('守典人', lv.storyBefore, ()=>{
+    buildPuzzle(lv);
+  });
+}
+
+function buildPuzzle(lv){
+  const area = document.getElementById('puzzleArea');
+  area.innerHTML = '';
+  puzzleState = { type:lv.type, solved:false, data:{} };
+  switch(lv.type){
+    case 'order': buildOrder(lv, area); break;
+    case 'piece': buildPiece(lv, area); break;
+    case 'rune': buildRune(lv, area); break;
+    case 'cate': buildCate(lv, area); break;
+    case 'decrypt': buildDecrypt(lv, area); break;
+    case 'shelf': buildShelf(lv, area); break;
+  }
+}
+
+/* ----- 1. 書頁排序 ----- */
+function buildOrder(lv, area){
+  // 打亂頁面
+  const pages = [...lv.pages].sort(()=>Math.random()-0.5);
+  puzzleState.data.pages = pages.map(p=>({...p}));
+  puzzleState.data.selected = -1;
+  const row = document.createElement('div');
+  row.className = 'page-row';
+  puzzleState.data.row = row;
+  renderOrder(row, lv);
+  area.appendChild(row);
+}
+function renderOrder(row, lv){
+  row.innerHTML = '';
+  puzzleState.data.pages.forEach((p, idx)=>{
+    const c = document.createElement('div');
+    c.className = 'page-card' + (puzzleState.data.selected===idx?' selected':'');
+    c.innerHTML = `<div class="pg-text">${p.text}</div><div class="pg-num">頁 ${idx+1}</div>`;
+    c.onclick = ()=>{
+      sfxPickup();
+      if(puzzleState.data.selected===-1){
+        puzzleState.data.selected = idx;
+      } else if(puzzleState.data.selected===idx){
+        puzzleState.data.selected = -1;
+      } else {
+        // 交換
+        const s = puzzleState.data.selected;
+        [puzzleState.data.pages[s], puzzleState.data.pages[idx]] = [puzzleState.data.pages[idx], puzzleState.data.pages[s]];
+        puzzleState.data.selected = -1;
+        sfxPlace();
+      }
+      renderOrder(row, lv);
+      checkOrder();
+    };
+    row.appendChild(c);
+  });
+}
+function checkOrder(){
+  const lv = currentLevel;
+  const nums = puzzleState.data.pages.map(p=>p.n);
+  const sorted = [...nums].sort((a,b)=>a-b);
+  if(JSON.stringify(nums)===JSON.stringify(sorted)){
+    onSolve();
+  }
+}
+
+/* ----- 2. 殘頁拼接 ----- */
+function buildPiece(lv, area){
+  const n = lv.gridSize;
+  const total = n*n;
+  puzzleState.data.size = n;
+  puzzleState.data.placed = new Array(total).fill(null); // slotIdx -> pieceIdx
+  puzzleState.data.selected = -1;
+  puzzleState.data.palette = lv.palette;
+  // 打亂順序
+  const order = [...Array(total).keys()].sort(()=>Math.random()-0.5);
+  puzzleState.data.order = order;
+
+  const grid = document.createElement('div');
+  grid.className = 'puzzle-grid';
+  grid.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+  const slotSize = n===2 ? 110 : 80;
+  for(let i=0;i<total;i++){
+    const slot = document.createElement('div');
+    slot.className = 'grid-slot';
+    slot.style.width = slotSize+'px';
+    slot.style.height = slotSize+'px';
+    slot.dataset.idx = i;
+    slot.onclick = ()=>placePiece(i, grid, tray);
+    grid.appendChild(slot);
+  }
+  area.appendChild(grid);
+
+  const tray = document.createElement('div');
+  tray.className = 'tray';
+  order.forEach(pieceIdx=>{
+    const piece = document.createElement('div');
+    piece.className = 'tray-piece';
+    piece.style.width = slotSize+'px';
+    piece.style.height = slotSize+'px';
+    piece.style.background = lv.palette[pieceIdx];
+    piece.dataset.piece = pieceIdx;
+    piece.onclick = ()=>{
+      sfxPickup();
+      puzzleState.data.selected = pieceIdx;
+      document.querySelectorAll('.tray-piece').forEach(p=>p.classList.remove('selected'));
+      piece.classList.add('selected');
+    };
+    tray.appendChild(piece);
+  });
+  area.appendChild(tray);
+}
+function placePiece(slotIdx, grid, tray){
+  if(puzzleState.data.selected===-1){
+    // 點擊已放置的 slot 可歸還
+    if(puzzleState.data.placed[slotIdx]!==null){
+      const pieceIdx = puzzleState.data.placed[slotIdx];
+      puzzleState.data.placed[slotIdx] = null;
+      const slot = grid.children[slotIdx];
+      slot.classList.remove('filled','locked');
+      slot.innerHTML = '';
+      // 恢復 tray 中該 piece
+      const piece = tray.querySelector(`[data-piece="${pieceIdx}"]`);
+      piece.classList.remove('placed');
+      sfxPlace();
+    }
+    return;
+  }
+  const pieceIdx = puzzleState.data.selected;
+  // 如果該 slot 已有 piece，先歸還
+  if(puzzleState.data.placed[slotIdx]!==null){
+    const old = puzzleState.data.placed[slotIdx];
+    tray.querySelector(`[data-piece="${old}"]`).classList.remove('placed');
+  }
+  puzzleState.data.placed[slotIdx] = pieceIdx;
+  puzzleState.data.selected = -1;
+  const slot = grid.children[slotIdx];
+  slot.classList.add('filled');
+  slot.style.background = puzzleState.data.palette[pieceIdx];
+  slot.innerHTML = '';
+  tray.querySelector(`[data-piece="${pieceIdx}"]`).classList.add('placed');
+  document.querySelectorAll('.tray-piece').forEach(p=>p.classList.remove('selected'));
+  sfxPlace();
+  // 檢查
+  let correct = true;
+  for(let i=0;i<puzzleState.data.placed.length;i++){
+    if(puzzleState.data.placed[i]!==i){ correct=false; break; }
+  }
+  if(correct){
+    // 鎖定所有 slot
+    [...grid.children].forEach(s=>s.classList.add('locked'));
+    setTimeout(onSolve, 400);
+  } else {
+    // 簡單回饋：若放錯，輕微閃一下（不強制復原，鼓勵嘗試）
+    if(puzzleState.data.placed[slotIdx]!==slotIdx){
+      slot.style.transition='all .3s';
+      setTimeout(()=>{ slot.style.opacity='0.5'; }, 50);
+      setTimeout(()=>{ slot.style.opacity='1'; }, 300);
+    } else {
+      sfxCorrect();
+    }
+  }
+}
+
+/* ----- 3. 符文淨化 ----- */
+function buildRune(lv, area){
+  const runes = lv.runes;
+  const n = runes.length;
+  puzzleState.data.sequence = [];
+  puzzleState.data.total = n;
+
+  const circle = document.createElement('div');
+  circle.className = 'rune-circle';
+  const center = document.createElement('div');
+  center.className = 'rune-center';
+  center.textContent = '依序\n淨化';
+  circle.appendChild(center);
+
+  const radius = 100;
+  runes.forEach((r,i)=>{
+    const angle = (Math.PI*2*i/n) - Math.PI/2;
+    const x = 140 + radius*Math.cos(angle) - 28;
+    const y = 140 + radius*Math.sin(angle) - 28;
+    const node = document.createElement('div');
+    node.className = 'rune-node';
+    node.style.left = x+'px';
+    node.style.top = y+'px';
+    node.textContent = r.label;
+    node.dataset.order = r.order;
+    node.onclick = ()=>{
+      const expected = puzzleState.data.sequence.length+1;
+      if(r.order===expected){
+        node.classList.add('lit');
+        puzzleState.data.sequence.push(r.order);
+        sfxCorrect();
+        if(puzzleState.data.sequence.length===n){
+          setTimeout(onSolve, 500);
+        }
+      } else {
+        node.classList.add('wrong');
+        sfxWrong();
+        setTimeout(()=>{
+          node.classList.remove('wrong');
+          // 重置已點亮
+          document.querySelectorAll('.rune-node').forEach(nd=>nd.classList.remove('lit'));
+          puzzleState.data.sequence = [];
+        }, 500);
+        toast('順序有誤，請重新開始');
+      }
+    };
+    circle.appendChild(node);
+  });
+  area.appendChild(circle);
+}
+
+/* ----- 4. 法則歸類 ----- */
+function buildCate(lv, area){
+  puzzleState.data.placed = {}; // cardIdx -> true
+  puzzleState.data.selected = -1;
+  // 打亂卡片
+  const cards = [...lv.cards].map((c,i)=>({...c, origIdx:i})).sort(()=>Math.random()-0.5);
+  puzzleState.data.cards = cards;
+
+  const zones = document.createElement('div');
+  zones.className = 'cate-zones';
+  lv.categories.forEach((cat,ci)=>{
+    const z = document.createElement('div');
+    z.className = 'cate-zone';
+    z.dataset.cate = cat.id;
+    z.innerHTML = `<div class="zone-title">${cat.name}</div><div class="zone-cards"></div>`;
+    z.onclick = ()=>{
+      if(puzzleState.data.selected===-1) return;
+      const selOrigIdx = puzzleState.data.selected;
+      const card = cards.find(c=>c.origIdx===selOrigIdx);
+      if(!card) return;
+      if(card.cate===cat.id){
+        // 正確放入
+        puzzleState.data.placed[card.origIdx] = true;
+        const holder = z.querySelector('.zone-cards');
+        const c = document.createElement('div');
+        c.className = 'law-card';
+        c.textContent = card.text;
+        c.style.opacity = '1';
+        holder.appendChild(c);
+        // 標記原卡片
+        const origCard = area.querySelector(`[data-idx="${card.origIdx}"]`);
+        if(origCard) origCard.classList.add('placed');
+        puzzleState.data.selected = -1;
+        sfxCorrect();
+        // 檢查是否全部完成
+        if(Object.keys(puzzleState.data.placed).length===cards.length){
+          [...zones.children].forEach(zz=>zz.classList.add('correct'));
+          setTimeout(onSolve, 400);
+        }
+      } else {
+        sfxWrong();
+        toast('歸類有誤');
+      }
+    };
+    zones.appendChild(z);
+  });
+  area.appendChild(zones);
+
+  const tray = document.createElement('div');
+  tray.className = 'tray';
+  cards.forEach(card=>{
+    const c = document.createElement('div');
+    c.className = 'law-card';
+    c.textContent = card.text;
+    c.dataset.idx = card.origIdx;
+    c.onclick = ()=>{
+      if(puzzleState.data.placed[card.origIdx]) return;
+      sfxPickup();
+      puzzleState.data.selected = card.origIdx;
+      tray.querySelectorAll('.law-card').forEach(x=>x.classList.remove('selected'));
+      c.classList.add('selected');
+    };
+    tray.appendChild(c);
+  });
+  area.appendChild(tray);
+}
+
+/* ----- 5. 古籍解密 ----- */
+function buildDecrypt(lv, area){
+  puzzleState.data.answers = new Array(lv.blanks.length).fill(null);
+  // 建立模板
+  const textDiv = document.createElement('div');
+  textDiv.className = 'decrypt-text';
+  let html = '';
+  let bi = 0;
+  lv.template.split('____').forEach((part,i)=>{
+    html += part;
+    if(i < lv.blanks.length){
+      html += `<span class="blank" data-bi="${bi}">＿＿</span>`;
+      bi++;
+    }
+  });
+  textDiv.innerHTML = html;
+  area.appendChild(textDiv);
+
+  // 選項池（所有選項打亂）
+  const allChoices = [];
+  lv.blanks.forEach((b,i)=>{
+    b.options.forEach(opt=>allChoices.push({text:opt, bi:i}));
+  });
+  allChoices.sort(()=>Math.random()-0.5);
+
+  const choices = document.createElement('div');
+  choices.className = 'choices';
+  allChoices.forEach(ch=>{
+    const chip = document.createElement('div');
+    chip.className = 'choice-chip';
+    chip.textContent = ch.text;
+    chip.onclick = ()=>{
+      // 找到第一個未填的 blank
+      let targetBi = puzzleState.data.answers.findIndex(a=>a===null);
+      if(targetBi===-1){ toast('所有缺字已填，請檢查'); return; }
+      puzzleState.data.answers[targetBi] = ch.text;
+      chip.classList.add('used');
+      const blank = textDiv.querySelector(`[data-bi="${targetBi}"]`);
+      blank.textContent = ch.text;
+      blank.classList.add('filled');
+      sfxPlace();
+      // 若全部填完，檢查
+      if(puzzleState.data.answers.every(a=>a!==null)){
+        let allCorrect = true;
+        puzzleState.data.answers.forEach((ans,i)=>{
+          const blank = textDiv.querySelector(`[data-bi="${i}"]`);
+          if(ans===lv.blanks[i].answer){
+            blank.classList.add('correct');
+          } else {
+            blank.classList.add('wrong');
+            allCorrect = false;
+          }
+        });
+        if(allCorrect){
+          setTimeout(onSolve, 600);
+        } else {
+          sfxWrong();
+          toast('有缺字有誤，請重置後重試');
+          setTimeout(()=>buildPuzzle(lv), 1200);
+        }
+      }
+    };
+    choices.appendChild(chip);
+  });
+  area.appendChild(choices);
+}
+
+/* ----- 6. 書架歸位 ----- */
+function buildShelf(lv, area){
+  puzzleState.data.placed = new Array(lv.shelfSlots.length).fill(null).map(()=>[]);
+  puzzleState.data.selected = -1;
+  puzzleState.data.books = [...lv.books].sort(()=>Math.random()-0.5);
+
+  // 書架格子
+  const shelf = document.createElement('div');
+  shelf.className = 'cate-zones';
+  lv.shelfSlots.forEach((slot,si)=>{
+    const z = document.createElement('div');
+    z.className = 'cate-zone';
+    z.style.minHeight = '140px';
+    z.innerHTML = `<div class="zone-title">${slot.label}</div><div class="zone-books" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;"></div>`;
+    z.onclick = ()=>{
+      if(puzzleState.data.selected===-1) return;
+      const book = puzzleState.data.books[puzzleState.data.selected];
+      if(book.slot===si){
+        puzzleState.data.placed[si].push(book);
+        const holder = z.querySelector('.zone-books');
+        const bk = document.createElement('div');
+        bk.style.cssText = `width:24px;height:60px;background:${book.color};border-radius:2px;box-shadow:0 2px 4px rgba(0,0,0,.4);writing-mode:vertical-rl;font-size:9px;color:#fff;padding:4px 2px;text-align:center;`;
+        bk.textContent = book.name;
+        holder.appendChild(bk);
+        tray.querySelector(`[data-bk="${puzzleState.data.selected}"]`).classList.add('placed');
+        puzzleState.data.selected = -1;
+        sfxCorrect();
+        // 檢查
+        const total = lv.books.length;
+        const placedCount = puzzleState.data.placed.reduce((s,a)=>s+a.length,0);
+        if(placedCount===total){
+          [...shelf.children].forEach(zz=>zz.classList.add('correct'));
+          setTimeout(onSolve, 400);
+        }
+      } else {
+        sfxWrong();
+        toast('位置有誤');
+      }
+    };
+    shelf.appendChild(z);
+  });
+  area.appendChild(shelf);
+
+  // 待歸位書籍托盤
+  const tray = document.createElement('div');
+  tray.className = 'tray';
+  puzzleState.data.books.forEach((book,bi)=>{
+    const bk = document.createElement('div');
+    bk.className = 'tray-piece';
+    bk.dataset.bk = bi;
+    bk.style.cssText = `width:26px;height:64px;background:${book.color};border-radius:2px;box-shadow:0 2px 4px rgba(0,0,0,.4);writing-mode:vertical-rl;font-size:9px;color:#fff;padding:4px 2px;text-align:center;`;
+    bk.textContent = book.name;
+    bk.onclick = ()=>{
+      sfxPickup();
+      puzzleState.data.selected = bi;
+      tray.querySelectorAll('.tray-piece').forEach(x=>x.classList.remove('selected'));
+      bk.classList.add('selected');
+    };
+    tray.appendChild(bk);
+  });
+  area.appendChild(tray);
+}
+
+/* ---------- 通關處理 ---------- */
+function onSolve(){
+  if(puzzleState.solved) return;
+  puzzleState.solved = true;
+  sfxSuccess();
+  const lv = currentLevel;
+  // 計算星級（簡單：固定 3 星，因無計時）
+  const stars = 3;
+  const firstTime = !S.completed[lv.id];
+  // 秩序值加成
+  let reward = lv.reward;
+  const dustLv = S.upgrades['dust']||0;
+  reward = Math.round(reward * (1 + dustLv*0.1));
+  if(firstTime){
+    S.orderPoints += reward;
+    S.completed[lv.id] = stars;
+    S.codex[lv.id] = true;
+    if(lv.codex && lv.codex.spirit){
+      S.spirits[lv.codex.spirit] = true;
+    }
+  } else {
+    S.orderPoints += Math.round(reward*0.2); // 重玩獎勵減半
+  }
+  saveGame();
+  // 成功彈窗
+  document.getElementById('successText').textContent = lv.storyAfter;
+  let rewardText = `秩序值 +${firstTime?reward:Math.round(reward*0.2)}`;
+  if(firstTime && lv.codex && lv.codex.spirit){
+    rewardText += `　·　喚醒書靈「${SPIRITS[lv.codex.spirit].name}」`;
+  } else if(firstTime){
+    rewardText += `　·　圖鑑解鎖`;
+  }
+  document.getElementById('successReward').textContent = rewardText;
+  document.getElementById('successOverlay').classList.add('show');
+}
+
+document.getElementById('successNext').onclick = ()=>{
+  document.getElementById('successOverlay').classList.remove('show');
+  openVault(currentVaultIdx);
+};
+
+/* ---------- 對話 ---------- */
+let dlgCallback = null;
+function showDialog(speaker, text, cb){
+  document.getElementById('dlgSpeaker').textContent = speaker;
+  document.getElementById('dlgText').textContent = '';
+  document.getElementById('dialogOverlay').classList.add('show');
+  dlgCallback = cb;
+  // 打字機效果
+  let i = 0;
+  const el = document.getElementById('dlgText');
+  const timer = setInterval(()=>{
+    el.textContent = text.slice(0, ++i);
+    if(i>=text.length) clearInterval(timer);
+  }, 30);
+}
+document.getElementById('dlgNext').onclick = ()=>{
+  document.getElementById('dialogOverlay').classList.remove('show');
+  if(dlgCallback){ const cb = dlgCallback; dlgCallback=null; cb(); }
+};
+
+/* ---------- 圖鑑 ---------- */
+function openCodex(){
+  document.getElementById('colTitle').textContent = '典籍圖鑑';
+  document.getElementById('colOrder').textContent = S.orderPoints;
+  const body = document.getElementById('colBody');
+  body.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'codex-grid';
+  LEVELS.forEach(lv=>{
+    const owned = S.codex[lv.id];
+    const v = VAULTS.find(x=>x.id===lv.vault);
+    const card = document.createElement('div');
+    card.className = 'codex-card' + (owned?'':' locked');
+    const hueMap = {element:'#8a6f3e', star:'#4a5a7a', life:'#4a6a4a', ancient:'#7a5f3e', forbidden:'#5a3a3a'};
+    card.innerHTML = `
+      <div class="book-spine" style="background:${owned?hueMap[lv.vault]:'#2a2a2a'};"></div>
+      <div class="book-name">${owned?lv.name:'？？？'}</div>
+      <div class="book-vault">${v.name}</div>
+    `;
+    if(owned){
+      card.onclick = ()=>{
+        let desc = lv.codex ? lv.codex.desc : '';
+        let frag = lv.codex && lv.codex.fragment ? lv.codex.fragment : '';
+        showDialog(lv.name, `${desc}\n\n【世界觀片段】${frag}`, ()=>{});
+      };
+    }
+    grid.appendChild(card);
+  });
+  body.appendChild(grid);
+  show('screen-collection');
+}
+
+/* ---------- 書靈 ---------- */
+function openSpirits(){
+  document.getElementById('colTitle').textContent = '書靈喚醒';
+  document.getElementById('colOrder').textContent = S.orderPoints;
+  const body = document.getElementById('colBody');
+  body.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'spirit-list';
+  Object.keys(SPIRITS).forEach(sid=>{
+    const sp = SPIRITS[sid];
+    const owned = S.spirits[sid];
+    const card = document.createElement('div');
+    card.className = 'spirit-card panel';
+    // SVG 書靈肖像
+    const portrait = `<svg viewBox="0 0 80 80" width="60" height="60">
+      <circle cx="40" cy="40" r="30" fill="none" stroke="#d4af37" stroke-width="1" opacity="${owned?0.8:0.2}"/>
+      <circle cx="40" cy="32" r="10" fill="none" stroke="#d4af37" stroke-width="1" opacity="${owned?0.9:0.2}"/>
+      <path d="M20 65 Q40 50 60 65" fill="none" stroke="#d4af37" stroke-width="1" opacity="${owned?0.9:0.2}"/>
+    </svg>`;
+    card.innerHTML = `
+      <div class="spirit-portrait">${owned?portrait:''}</div>
+      <div class="spirit-info">
+        <h3>${owned?sp.name:'？？？'}</h3>
+        <p style="color:var(--gold-soft);">${owned?sp.title:'尚未喚醒'}</p>
+        <p style="margin-top:6px;">${owned?sp.desc:'修復對應稀有典籍後，即可喚醒這位書靈。'}</p>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+  body.appendChild(list);
+  show('screen-collection');
+}
+
+/* ---------- 升級 ---------- */
+function openUpgrades(){
+  document.getElementById('colTitle').textContent = '館藏升級';
+  document.getElementById('colOrder').textContent = S.orderPoints;
+  renderUpgrades();
+  show('screen-collection');
+}
+function renderUpgrades(){
+  document.getElementById('colOrder').textContent = S.orderPoints;
+  const body = document.getElementById('colBody');
+  body.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'upgrade-list';
+  UPGRADES.forEach(up=>{
+    const lv = S.upgrades[up.id]||0;
+    const maxed = lv>=up.max;
+    const cost = up.cost * (lv+1);
+    const item = document.createElement('div');
+    item.className = 'upgrade-item';
+    item.innerHTML = `
+      <div class="up-info">
+        <div class="up-name">${up.name} <span style="color:var(--gold-soft);font-size:11px;">Lv.${lv}/${up.max}</span></div>
+        <div class="up-desc">${up.desc}</div>
+      </div>
+      <div class="up-cost">${maxed?'已滿級':cost+' 秩序值'}</div>
+    `;
+    if(!maxed){
+      const btn = document.createElement('button');
+      btn.className = 'btn small';
+      btn.textContent = '升級';
+      btn.disabled = S.orderPoints < cost;
+      btn.onclick = ()=>{
+        if(S.orderPoints < cost){ toast('秩序值不足'); return; }
+        S.orderPoints -= cost;
+        S.upgrades[up.id] = lv+1;
+        saveGame();
+        sfxSuccess();
+        renderUpgrades();
+      };
+      item.appendChild(btn);
+    }
+    list.appendChild(item);
+  });
+  body.appendChild(list);
+}
+
+/* ---------- 事件綁定 ---------- */
+document.getElementById('btnStart').onclick = ()=>{
+  sfxPage();
+  if(S.hasSave && confirm('將開新檔（清除舊存檔），確定？')){
+    S = defaultState(); saveGame();
+  }
+  renderHall();
+  show('screen-hall');
+};
+document.getElementById('btnContinue').onclick = ()=>{
+  sfxPage();
+  renderHall();
+  show('screen-hall');
+};
+document.getElementById('btnAbout').onclick = ()=>{
+  showDialog('關於',
+    '《魔法圖書館：典籍歸序》\n\n你是上古隱世聖典圖書館的唯一繼任管理員。第一次魔法世界大戰後，典籍四散、法則紊亂。以「溯序之瞳」為憑，整理、修復、歸序每一卷典籍，挽回崩壞的魔星大陸法則。\n\n— 無戰鬥・無驚悚・靜謐治愈 —',
+    ()=>{});
+};
+document.getElementById('navCodex').onclick = openCodex;
+document.getElementById('navSpirits').onclick = openSpirits;
+document.getElementById('navUpgrade').onclick = openUpgrades;
+
+document.querySelectorAll('[data-back="hall"]').forEach(el=>{
+  el.onclick = ()=>{ renderHall(); show('screen-hall'); };
+});
+document.getElementById('puzzleBack').onclick = ()=>{
+  if(confirm('確定放棄本次解謎？')){
+    openVault(currentVaultIdx);
+  }
+};
+document.getElementById('btnResetPuzzle').onclick = ()=>{
+  buildPuzzle(currentLevel);
+};
+
+/* ---------- 啟動 ---------- */
+initBg();
+renderHall();
+if(S.hasSave){
+  document.getElementById('btnContinue').disabled = false;
+}
+</script>
+</body>
+</html>
