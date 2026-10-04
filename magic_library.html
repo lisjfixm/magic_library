@@ -484,6 +484,81 @@ h1,h2,h3{font-weight:normal;letter-spacing:4px;}
 
 .empty-hint{color:var(--paper-faded);text-align:center;padding:40px 20px;font-size:13px;line-height:2;}
 
+/* 記憶翻牌 */
+.memory-grid{display:grid;gap:8px;justify-content:center;}
+.mem-card{
+  width:60px;height:60px;cursor:pointer;perspective:600px;
+}
+.mem-card-inner{
+  width:100%;height:100%;position:relative;transition:transform .4s;
+  transform-style:preserve-3d;
+}
+.mem-card.flipped .mem-card-inner{transform:rotateY(180deg);}
+.mem-card.matched{cursor:default;}
+.mem-card.matched .mem-card-inner{transform:rotateY(180deg);}
+.mem-face{
+  position:absolute;inset:0;backface-visibility:hidden;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+}
+.mem-back{
+  background:linear-gradient(160deg,#2a3a5a,#1a2540);
+  border:1px solid var(--gold-soft);
+}
+.mem-front{
+  background:linear-gradient(160deg,var(--paper),var(--paper-dim));
+  transform:rotateY(180deg);border:1px solid var(--gold);
+  font-size:20px;color:var(--ink);
+}
+.mem-card.matched .mem-front{box-shadow:0 0 12px rgba(212,175,55,.5);}
+
+/* 星圖連線 */
+.constellation-area{position:relative;width:320px;height:320px;}
+.star-node{
+  position:absolute;width:36px;height:36px;border-radius:50%;
+  background:radial-gradient(circle,rgba(212,175,55,.4),rgba(20,28,46,.9));
+  border:1.5px solid var(--gold-soft);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:var(--paper);transition:all .3s;
+  transform:translate(-50%,-50%);
+}
+.star-node.lit{background:radial-gradient(circle,rgba(212,175,55,.8),rgba(140,110,40,.9));box-shadow:0 0 16px rgba(212,175,55,.7);}
+.star-node.wrong{border-color:var(--danger);animation:shake .4s;}
+.constellation-line{position:absolute;background:var(--gold);height:1.5px;transform-origin:left center;opacity:.7;pointer-events:none;}
+
+/* 成就 */
+.ach-list{width:100%;max-width:600px;display:flex;flex-direction:column;gap:8px;}
+.ach-item{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  background:var(--panel);border:1px solid var(--panel-border);border-radius:6px;
+}
+.ach-item.unlocked{border-color:var(--gold);}
+.ach-item.locked{opacity:.5;}
+.ach-icon{width:40px;height:40px;flex-shrink:0;}
+.ach-info{flex:1;}
+.ach-name{font-size:14px;letter-spacing:1px;}
+.ach-desc{font-size:11px;color:var(--paper-faded);margin-top:2px;}
+
+/* 每日入口 */
+.daily-banner{
+  width:100%;max-width:720px;background:linear-gradient(90deg,rgba(212,175,55,.15),rgba(212,175,55,.05));
+  border:1px solid var(--gold-soft);border-radius:6px;padding:12px 16px;
+  margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;
+  cursor:pointer;transition:all .25s;
+}
+.daily-banner:hover{box-shadow:0 0 16px rgba(212,175,55,.3);}
+.daily-banner .daily-title{font-size:14px;color:var(--gold);letter-spacing:2px;}
+.daily-banner .daily-sub{font-size:11px;color:var(--paper-dim);margin-top:3px;}
+
+/* 教學提示浮層 */
+.tutorial-tip{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:rgba(20,28,46,.95);border:1px solid var(--gold-soft);
+  padding:10px 18px;border-radius:20px;font-size:13px;color:var(--paper);
+  z-index:150;letter-spacing:1px;max-width:90vw;text-align:center;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+.tutorial-tip .skip{color:var(--gold-soft);cursor:pointer;margin-left:10px;text-decoration:underline;}
+
 /* 提示 Toast */
 #toast{
   position:fixed;top:20px;left:50%;transform:translateX(-50%);
@@ -556,6 +631,10 @@ h1,h2,h3{font-weight:normal;letter-spacing:4px;}
     <div class="nav-btn" id="navUpgrade">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
       <span>館藏升級</span>
+    </div>
+    <div class="nav-btn" id="navAch">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="5"/><path d="M8 13l-2 8 6-3 6 3-2-8"/></svg>
+      <span>成就</span>
     </div>
   </div>
 </div>
@@ -1042,6 +1121,214 @@ const LEVELS = [
     storyAfter:'契約重現：「守典人歸位，典籍歸序，大陸法則重啟。」——你站在圖書館中央，看見所有書架同時亮起。大陸的法則，因你而重新流轉。',
     codex:{ desc:'第一次大戰終戰後的世界契約。大陸法則重啟的見證。', fragment:'你——新任守典人——終於完成了使命。', spirit:'final' }
   },
+
+  /* ===== 擴充：元素典庫 ===== */
+  { id:'el9', vault:'element', name:'《水之七情》', type:'cate', disorder:'屬性混雜',
+    reward:65, hint:'將水之七情的法則歸入源頭與支流。',
+    categories:[{id:'source',name:'源頭',color:'#2980b9'},{id:'tributary',name:'支流',color:'#5dade2'}],
+    cards:[
+      {text:'雪山融水',cate:'source'},{text:'地底泉脈',cate:'source'},
+      {text:'天降甘霖',cate:'source'},{text:'溪水匯流',cate:'tributary'},
+      {text:'河川彎道',cate:'tributary'},{text:'潮汐起伏',cate:'tributary'},
+    ],
+    storyBefore:'水元素的篇章比想像中細膩——源頭與支流各有其律。',
+    storyAfter:'水歸源流，萬川歸海。',
+    codex:{desc:'水元素的源頭與支流分類。',fragment:'水雖柔軟，卻能穿石。'}
+  },
+  { id:'el10', vault:'element', name:'《雷之季候》', type:'order', disorder:'排序錯亂',
+    reward:70, hint:'依雷聲從初響到寂滅排序。',
+    pages:[
+      {n:3,text:'雷聲漸遠，餘韻在雲間繚繞。'},
+      {n:1,text:'遠方傳來第一聲悶響。'},
+      {n:4,text:'雨過天晴，泥土散發清香。'},
+      {n:2,text:'電光劃破天際，雷聲轟然炸裂。'},
+    ],
+    storyBefore:'雷的季候篇章散了。從悶響到寂滅，恢復它的脈絡。',
+    storyAfter:'雷之季候歸序。你聽見遠處隱隱的雷聲，與圖書館共鳴。',
+    codex:{desc:'雷元素從初響到寂滅的季候記錄。',fragment:'雷是天與地的對話。'}
+  },
+  { id:'el11', vault:'element', name:'《土之承載》', type:'shelf', disorder:'排序錯亂',
+    reward:75, hint:'依地層深度歸位：表土、岩層、深淵。',
+    shelfSlots:[{label:'表土層'},{label:'岩層'},{label:'深淵'}],
+    books:[
+      {name:'落葉泥',color:'#5a4a3a',slot:0},{name:'草根土',color:'#6a5a4a',slot:0},
+      {name:'花崗岩',color:'#7a6a5a',slot:1},{name:'大理石',color:'#8a7a6a',slot:1},
+      {name:'地核脈',color:'#3a2a1a',slot:2},{name:'深淵岩',color:'#2a1a0a',slot:2},
+    ],
+    storyBefore:'土承載萬物，從表土到深淵，每一層都有其律。',
+    storyAfter:'地層歸位。你感到腳下的石地傳來沉穩的脈動。',
+    codex:{desc:'大地地層的分類記錄。',fragment:'土是最沉默的元素，卻是最堅定的支撐。'}
+  },
+
+  /* ===== 擴充：星辰典庫 ===== */
+  { id:'st6', vault:'star', name:'《四季輪轉》', type:'rune', disorder:'封印鬆動',
+    reward:75, hint:'依春夏秋冬之序點亮。',
+    runes:[
+      {id:'spring',label:'春',order:1},{id:'summer',label:'夏',order:2},
+      {id:'autumn',label:'秋',order:3},{id:'winter',label:'冬',order:4},
+    ],
+    storyBefore:'四季的符文被戰火擾亂。恢復它們的次序。',
+    storyAfter:'四季輪轉恢復。窗外，光影緩緩移動，一如常軌。',
+    codex:{desc:'四季運行的符文印記。',fragment:'春生夏長，秋收冬藏。'}
+  },
+  { id:'st7', vault:'star', name:'《北極星圖》', type:'connect', disorder:'封印鬆動',
+    reward:85, hint:'依序點亮恆星，連出北斗七星的形狀。',
+    stars:[
+      {id:'a',x:50,y:280,label:'搖光'},{id:'b',x:120,y:260,label:'開陽'},
+      {id:'c',x:180,y:230,label:'玉衡'},{id:'d',x:230,y:200,label:'天權'},
+      {id:'e',x:200,y:150,label:'天璣'},{id:'f',x:150,y:120,label:'天璇'},
+      {id:'g',x:90,y:100,label:'天樞'},
+    ],
+    sequence:['g','f','e','d','c','b','a'],
+    storyBefore:'北斗七星的連線斷了。依古圖所示，從天樞開始，依次點亮。',
+    storyAfter:'北斗七星重新連成一線。夜空中，北極星為你指引方向。',
+    codex:{desc:'北斗七星的連線圖譜。',fragment:'北斗永恆，是夜行旅人的安慰。'}
+  },
+  { id:'st8', vault:'star', name:'《潮汐之律》', type:'decrypt', disorder:'塵封失語',
+    reward:80, hint:'填入潮汐的節奏。',
+    template:'月滿則潮____，月虧則潮____，此乃大海的呼吸。',
+    blanks:[
+      {answer:'漲',options:['漲','落','平','枯']},
+      {answer:'落',options:['漲','落','湧','升']},
+    ],
+    storyBefore:'潮汐的文字被磨去了。想一想大海如何跟隨月亮。',
+    storyAfter:'潮汐之律恢復。你彷彿聽見遠海的潮聲。',
+    codex:{desc:'潮汐與月亮的對應關係。',fragment:'大海的心跳，跟隨月亮。'}
+  },
+  { id:'st9', vault:'star', name:'《流星軌跡》', type:'piece', disorder:'殘缺破損',
+    reward:85, hint:'拼合這張流星劃過夜空的圖。',
+    gridSize:3, palette:['#1a2a4a','#2a3a5a','#3a4a6a','#d4af37','#c9a96e','#9fb8d9','#4a5a7a','#5a6a8a','#2a3a5a'],
+    storyBefore:'流星的圖被撕碎了。拼回那道劃過夜空的光芒。',
+    storyAfter:'流星重現。你彷彿看見一道金光劃過天窗。',
+    codex:{desc:'流星劃過的軌跡圖。',fragment:'流星是天空的郵戳。'}
+  },
+
+  /* ===== 擴充：生靈典庫 ===== */
+  { id:'li6', vault:'life', name:'《花海記》', type:'memory', disorder:'封印鬆動',
+    reward:80, hint:'翻開卡片，配對相同的花朵。',
+    pairs:[
+      {id:'rose',label:'薔薇'},{id:'lily',label:'百合'},
+      {id:'iris',label:'鳶尾'},{id:'violet',label:'紫羅蘭'},
+    ],
+    storyBefore:'花海的記憶散亂了。翻開成對的花朵，恢復這片記憶花田。',
+    storyAfter:'成對的花朵重新綻放。空氣中浮起淡淡的花香。',
+    codex:{desc:'花海中花朵的記憶配對。',fragment:'每一朵花都記得春天。'}
+  },
+  { id:'li7', vault:'life', name:'《溪流石》', type:'piece', disorder:'殘缺破損',
+    reward:85, hint:'拼合溪流穿過石灘的畫面。',
+    gridSize:3, palette:['#5a8ab8','#7ab8d9','#8a7a55','#6a9ab8','#9ac8d9','#7a6a55','#4a7aa8','#6a8a4a','#5a7a9a'],
+    storyBefore:'溪流的畫碎了。拼回那潺潺流水。',
+    storyAfter:'溪流重新流動。你彷彿聽見水聲。',
+    codex:{desc:'溪流穿過石灘的生態圖。',fragment:'溪流從不爭，卻能穿山而過。'}
+  },
+  { id:'li8', vault:'life', name:'《走獸錄》', type:'shelf', disorder:'排序錯亂',
+    reward:90, hint:'依棲地歸位：山林、草原、河岸。',
+    shelfSlots:[{label:'山林'},{label:'草原'},{label:'河岸'}],
+    books:[
+      {name:'鹿',color:'#8a7a55',slot:0},{name:'熊',color:'#6a5a4a',slot:0},
+      {name:'馬',color:'#a89a7a',slot:1},{name:'羚羊',color:'#b8a88a',slot:1},
+      {name:'河狸',color:'#5a6a7a',slot:2},{name:'水獺',color:'#6a7a8a',slot:2},
+    ],
+    storyBefore:'走獸的書籍被混放了。依牠們的家園歸位。',
+    storyAfter:'走獸歸林。你彷彿聽見遠處的鹿鳴。',
+    codex:{desc:'陸地走獸的棲地分類。',fragment:'每隻獸都有自己的山。'}
+  },
+  { id:'li9', vault:'life', name:'《菌菇譜》', type:'memory', disorder:'封印鬆動',
+    reward:95, hint:'配對成對的菌菇記憶。',
+    pairs:[
+      {id:'chan',label:'松茸'},{id:'mo',label:'木耳'},
+      {id:'zhu',label:'竹蓀'},{id:'ling',label:'靈芝'},
+    ],
+    storyBefore:'森林的菌菇記憶散了。翻牌配對，恢復地下的菌網。',
+    storyAfter:'菌菇的記憶重連。森林的地下網絡再次甦醒。',
+    codex:{desc:'森林菌類的記憶圖譜。',fragment:'菌菇是森林的互聯網。',spirit:'forest'},
+  },
+
+  /* ===== 擴充：古秘典庫 ===== */
+  { id:'an5', vault:'ancient', name:'《建館者日記》', type:'decrypt', disorder:'塵封失語',
+    reward:95, hint:'填入建館者的初衷。',
+    template:'我們建此館，不為收藏____，而為守護____。',
+    blanks:[
+      {answer:'寶藏',options:['寶藏','書卷','黃金','權力']},
+      {answer:'法則',options:['法則','和平','記憶','希望']},
+    ],
+    storyBefore:'建館者的日記缺了關鍵字。讀一讀他們的心意。',
+    storyAfter:'你終於明白：這座圖書館從來不是寶庫，而是法則的守護所。',
+    codex:{desc:'初代建館者的私人日記。',fragment:'守典人的使命，始於守護，而非收藏。'}
+  },
+  { id:'an6', vault:'ancient', name:'《失落咒語》', type:'rune', disorder:'封印鬆動',
+    reward:100, hint:'依咒語的節奏點亮。',
+    runes:[
+      {id:'a',label:'溯',order:1},{id:'b',label:'序',order:2},
+      {id:'c',label:'歸',order:3},{id:'d',label:'一',order:4},
+    ],
+    storyBefore:'這句失落的咒語是圖書館的開館咒。依節奏點亮。',
+    storyAfter:'「溯序歸一」——圖書館輕輕震動，回應了千年的召喚。',
+    codex:{desc:'圖書館的開館咒語。',fragment:'溯序歸一，萬法歸位。'}
+  },
+  { id:'an7', vault:'ancient', name:'《守典人誓約》', type:'order', disorder:'排序錯亂',
+    reward:110, hint:'依誓約的從今到古排序。',
+    pages:[
+      {n:3,text:'千年之後，繼任者將重新點亮書架。'},
+      {n:1,text:'吾等立誓：守護典籍，直至最後一頁。'},
+      {n:4,text:'此誓約刻於圖書館基石，永不磨滅。'},
+      {n:2,text:'大戰燃起，吾等以生命封印圖書館。'},
+    ],
+    storyBefore:'守典人的誓約散了。這是他們留在世間的最後話語。',
+    storyAfter:'誓約重現。你胸口的溯序之瞳微微發熱——你也是守典人了。',
+    codex:{desc:'歷代守典人的誓約。',fragment:'守典人，生生不息。'}
+  },
+
+  /* ===== 擴充：禁忌典庫 ===== */
+  { id:'fb6', vault:'forbidden', name:'《時間裂縫》', type:'decrypt', disorder:'塵封失語',
+    reward:130, hint:'填入時間的本質。',
+    template:'時間是一條____的河，無法____，只能前行。',
+    blanks:[
+      {answer:'單向',options:['單向','循環','靜止','交錯']},
+      {answer:'回頭',options:['回頭','停下','改道','跳躍']},
+    ],
+    storyBefore:'時間裂縫中滲出的文字。窺探時間的本質。',
+    storyAfter:'時間不可回頭。你更加珍惜眼前的每一卷書。',
+    codex:{desc:'時間法則的禁忌記錄。',fragment:'唯一能對抗時間的，是記憶。'}
+  },
+  { id:'fb7', vault:'forbidden', name:'《戰爭契約》', type:'constraint', disorder:'法則錯位',
+    reward:150, hint:'五種戰爭法則，依約束排列。',
+    elements:['和約','烽火','結盟','盟書','休戰'],
+    constraints:[
+      {a:'和約',b:'休戰',type:'adj',label:'和約 必須 緊鄰 休戰'},
+      {a:'烽火',b:'盟書',type:'gap',label:'烽火 與 盟書 須 隔一位'},
+      {a:'結盟',b:'和約',type:'notadj',label:'結盟 不可 鄰接 和約'},
+      {a:'烽火',b:'休戰',type:'notadj',label:'烽火 不可 鄰接 休戰'},
+    ],
+    storyBefore:'這份戰爭契約的位次錯亂。誰先誰後，決定了千萬人的命運。',
+    storyAfter:'契約位次歸序。你終於讀懂：戰爭與和平，只在一紙之間。',
+    codex:{desc:'終戰契約的位次排列。',fragment:'和平從不是理所當然，而是簽下的承諾。'}
+  },
+  { id:'fb8', vault:'forbidden', name:'《虛光之鏡》', type:'memory', disorder:'封印鬆動',
+    reward:160, hint:'在虛光之鏡中，配對鏡像符文。',
+    pairs:[
+      {id:'mir1',label:'始'},{id:'mir2',label:'終'},
+      {id:'mir3',label:'生'},{id:'mir4',label:'滅'},
+    ],
+    storyBefore:'虛光之鏡映出成對的符文。翻開它們，看見鏡像中的真相。',
+    storyAfter:'鏡像成對。你在鏡中看見自己——一個真正的守典人。',
+    codex:{desc:'虛光之鏡的鏡像符文。',fragment:'始與終，生與滅，本是一體。'}
+  },
+
+  /* ===== 隱藏典籍 ===== */
+  { id:'hd1', vault:'forbidden', name:'《守典人絮語》', type:'connect', disorder:'塵封失語',
+    reward:200, hint:'這是隱藏卷。點亮五星，完成最終的絮語。',
+    stars:[
+      {id:'a',x:60,y:60,label:'守'},{id:'b',x:160,y:80,label:'典'},
+      {id:'c',x:260,y:120,label:'人'},{id:'d',x:100,y:220,label:'歸'},
+      {id:'e',x:220,y:250,label:'序'},
+    ],
+    sequence:['a','b','c','e','d'],
+    hidden:true,
+    storyBefore:'你在圖書館最深處發現這卷從未記錄的典籍——《守典人絮語》。',
+    storyAfter:'五星連線，化為一句輕聲的感謝：「辛苦了，守典人。」——這是圖書館對你說的話。',
+    codex:{desc:'圖書館對歷代守典人的緘默致謝。',fragment:'原來圖書館一直知道你在。',spirit:'final'},
+  },
 ];
 
 /* ---------- 書靈資料 ---------- */
@@ -1078,6 +1365,10 @@ function defaultState(){
     codex:{},            // bookId -> true
     spirits:{},          // spiritId -> true
     upgrades:{},         // upId -> level
+    achievements:{},    // achId -> true
+    tutorialDone:{},     // puzzleType -> true
+    dailyDate:'',       // last completed daily date string
+    dailyStreak:0,      // consecutive days
     muted:false,
     hasSave:false,
   };
@@ -1176,6 +1467,28 @@ function isVaultUnlocked(idx){
 
 function renderHall(){
   document.getElementById('orderPoints').textContent = S.orderPoints;
+  // 每日典籍橫幅
+  let banner = document.getElementById('dailyBanner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'dailyBanner';
+    banner.className = 'daily-banner';
+    const hall = document.getElementById('screen-hall');
+    hall.insertBefore(banner, document.getElementById('vaultGrid'));
+  }
+  const today = todayStr();
+  const doneToday = S.dailyDate===today;
+  const dLv = getDailyLevel();
+  banner.innerHTML = `
+    <div>
+      <div class="daily-title">${doneToday?'今日典籍已修復':'每日典籍'}</div>
+      <div class="daily-sub">${doneToday?'明日再來　·　連續 '+S.dailyStreak+' 天':dLv.name+'　·　完成 +50 秩序值'}</div>
+    </div>
+    <div style="color:var(--gold);font-size:13px;">${doneToday?'已完成':'前往修復 →'}</div>
+  `;
+  banner.onclick = doneToday?null:openDaily;
+  banner.style.opacity = doneToday?0.6:1;
+
   const grid = document.getElementById('vaultGrid');
   grid.innerHTML = '';
   VAULTS.forEach((v,i)=>{
@@ -1208,9 +1521,13 @@ function openVault(idx){
   document.getElementById('vaultOrderPoints').textContent = S.orderPoints;
   const list = document.getElementById('levelList');
   list.innerHTML = '';
-  LEVELS.filter(l=>l.vault===v.id).forEach((lv,i)=>{
+  const allLevels = LEVELS.filter(l=>l.vault===v.id);
+  // 隱藏關卡：僅在所有非隱藏關卡完成後顯示
+  const allDone = LEVELS.filter(l=>!l.hidden).every(l=>S.completed[l.id]);
+  allLevels.forEach((lv,i)=>{
+    if(lv.hidden && !allDone) return;
     const done = S.completed[lv.id];
-    const prevDone = i===0 || S.completed[LEVELS.filter(x=>x.vault===v.id)[i-1].id];
+    const prevDone = i===0 || S.completed[allLevels[i-1].id];
     const unlocked = prevDone || done;
     const card = document.createElement('div');
     card.className = 'level-card' + (unlocked?'':' locked');
@@ -1265,6 +1582,8 @@ function buildPuzzle(lv){
     case 'decrypt': buildDecrypt(lv, area); break;
     case 'shelf': buildShelf(lv, area); break;
     case 'constraint': buildConstraint(lv, area); break;
+    case 'memory': buildMemory(lv, area); break;
+    case 'connect': buildConnect(lv, area); break;
   }
 }
 
@@ -1983,6 +2302,119 @@ function checkConstraints(lv, area, rulesDiv){
   }
 }
 
+/* ----- 8. 記憶翻牌 ----- */
+function buildMemory(lv, area){
+  // 建立配對：每對兩張卡
+  const cards = [];
+  lv.pairs.forEach((p,i)=>{
+    cards.push({pairId:p.id, label:p.label, key:i+'a'});
+    cards.push({pairId:p.id, label:p.label, key:i+'b'});
+  });
+  cards.sort(()=>Math.random()-0.5);
+  puzzleState.data.cards = cards;
+  puzzleState.data.flipped = [];
+  puzzleState.data.matched = new Set();
+
+  const grid = document.createElement('div');
+  grid.className = 'memory-grid';
+  grid.style.gridTemplateColumns = `repeat(${Math.min(4, cards.length/2)}, 1fr)`;
+  cards.forEach((c,i)=>{
+    const card = document.createElement('div');
+    card.className = 'mem-card';
+    card.dataset.idx = i;
+    card.innerHTML = `<div class="mem-card-inner">
+      <div class="mem-face mem-back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="1.5"><circle cx="12" cy="12" r="8"/></svg>
+      </div>
+      <div class="mem-face mem-front">${c.label}</div>
+    </div>`;
+    card.onclick = ()=>{
+      if(puzzleState.data.matched.has(i)) return;
+      if(card.classList.contains('flipped')) return;
+      if(puzzleState.data.flipped.length>=2) return;
+      card.classList.add('flipped');
+      sfxPickup();
+      puzzleState.data.flipped.push(i);
+      if(puzzleState.data.flipped.length===2){
+        const [a,b] = puzzleState.data.flipped;
+        setTimeout(()=>{
+          if(cards[a].pairId===cards[b].pairId){
+            puzzleState.data.matched.add(a);
+            puzzleState.data.matched.add(b);
+            grid.children[a].classList.add('matched');
+            grid.children[b].classList.add('matched');
+            sfxCorrect();
+          } else {
+            grid.children[a].classList.remove('flipped');
+            grid.children[b].classList.remove('flipped');
+            sfxWrong();
+          }
+          puzzleState.data.flipped = [];
+          if(puzzleState.data.matched.size===cards.length){
+            setTimeout(onSolve, 500);
+          }
+        }, 600);
+      }
+    };
+    grid.appendChild(card);
+  });
+  area.appendChild(grid);
+}
+
+/* ----- 9. 星圖連線 ----- */
+function buildConnect(lv, area){
+  puzzleState.data.sequence = [];
+  puzzleState.data.total = lv.stars.length;
+  const box = document.createElement('div');
+  box.className = 'constellation-area';
+  lv.stars.forEach(st=>{
+    const node = document.createElement('div');
+    node.className = 'star-node';
+    node.style.left = st.x+'px';
+    node.style.top = st.y+'px';
+    node.textContent = st.label;
+    node.dataset.id = st.id;
+    node.onclick = ()=>{
+      const expected = lv.sequence[puzzleState.data.sequence.length];
+      if(st.id===expected){
+        node.classList.add('lit');
+        puzzleState.data.sequence.push(st.id);
+        sfxCorrect();
+        // 畫線
+        if(puzzleState.data.sequence.length>1){
+          const prev = lv.stars.find(s=>s.id===puzzleState.data.sequence[puzzleState.data.sequence.length-2]);
+          const line = document.createElement('div');
+          line.className = 'constellation-line';
+          const dx = st.x-prev.x, dy = st.y-prev.y;
+          const len = Math.sqrt(dx*dx+dy*dy);
+          const ang = Math.atan2(dy,dx)*180/Math.PI;
+          line.style.left = prev.x+'px';
+          line.style.top = prev.y+'px';
+          line.style.width = len+'px';
+          line.style.transform = `rotate(${ang}deg)`;
+          box.appendChild(line);
+        }
+        if(puzzleState.data.sequence.length===lv.sequence.length){
+          setTimeout(onSolve, 600);
+        }
+      } else {
+        node.classList.add('wrong');
+        sfxWrong();
+        setTimeout(()=>{
+          node.classList.remove('wrong');
+          // 重置
+          puzzleState.data.sequence = [];
+          box.querySelectorAll('.star-node').forEach(n=>n.classList.remove('lit'));
+          box.querySelectorAll('.constellation-line').forEach(l=>l.remove());
+        }, 500);
+        toast('順序有誤，請重試');
+      }
+    };
+    box.appendChild(node);
+  });
+  area.appendChild(box);
+}
+
 /* ---------- 通關處理 ---------- */
 function onSolve(){
   if(puzzleState.solved) return;
@@ -2006,7 +2438,19 @@ function onSolve(){
   } else {
     S.orderPoints += Math.round(reward*0.2); // 重玩獎勵減半
   }
+  // 每日典籍獎勵
+  if(puzzleState.data && puzzleState.data.isDaily){
+    const today = todayStr();
+    if(S.dailyDate!==today){
+      const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+      S.dailyStreak = (S.dailyDate===yesterday)?(S.dailyStreak+1):1;
+      S.dailyDate = today;
+      S.orderPoints += 50;
+      rewardText += `　·　每日典籍 +50（連續 ${S.dailyStreak} 天）`;
+    }
+  }
   saveGame();
+  checkAchievements();
   // 成功彈窗
   document.getElementById('successText').textContent = lv.storyAfter;
   let rewardText = `秩序值 +${firstTime?reward:Math.round(reward*0.2)}`;
@@ -2155,6 +2599,97 @@ function renderUpgrades(){
   body.appendChild(list);
 }
 
+/* ---------- 成就系統 ---------- */
+const ACHIEVEMENTS = [
+  { id:'first', name:'開卷有益', desc:'修復第一本典籍', icon:'📖' },
+  { id:'vault1', name:'元素初成', desc:'完成元素典庫全部關卡', icon:'⚡' },
+  { id:'vault2', name:'星辰守望', desc:'完成星辰典庫全部關卡', icon:'⭐' },
+  { id:'vault3', name:'生靈溫柔', desc:'完成生靈典庫全部關卡', icon:'🌿' },
+  { id:'vault4', name:'古秘尋跡', desc:'完成古秘典庫全部關卡', icon:'📜' },
+  { id:'vault5', name:'禁忌解封', desc:'完成禁忌典庫全部關卡', icon:'🔥' },
+  { id:'spirit1', name:'第一位書靈', desc:'喚醒第一隻書靈', icon:'✨' },
+  { id:'rich', name:'小有所成', desc:'秩序值累計達 500', icon:'💰' },
+  { id:'collector', name:'博學守典人', desc:'圖鑑收錄 20 本典籍', icon:'📚' },
+  { id:'completion', name:'萬法歸一', desc:'完成所有關卡', icon:'🏆' },
+];
+function checkAchievements(){
+  const newOnes = [];
+  const done = Object.keys(S.completed).length;
+  const codexCount = Object.keys(S.codex).length;
+  const spiritCount = Object.keys(S.spirits).length;
+  const check = (id, cond)=>{
+    if(cond && !S.achievements[id]){ S.achievements[id]=true; newOnes.push(id); }
+  };
+  check('first', done>=1);
+  check('vault1', completedCount('element')>=totalCount('element'));
+  check('vault2', completedCount('star')>=totalCount('star'));
+  check('vault3', completedCount('life')>=totalCount('life'));
+  check('vault4', completedCount('ancient')>=totalCount('ancient'));
+  check('vault5', completedCount('forbidden')>=totalCount('forbidden'));
+  check('spirit1', spiritCount>=1);
+  check('rich', S.orderPoints>=500);
+  check('collector', codexCount>=20);
+  check('completion', LEVELS.filter(l=>!l.hidden).every(l=>S.completed[l.id]));
+  if(newOnes.length){
+    saveGame();
+    setTimeout(()=>{
+      newOnes.forEach(id=>{
+        const a = ACHIEVEMENTS.find(x=>x.id===id);
+        showDialog('成就解鎖', `「${a.name}」——${a.desc}`, ()=>{});
+      });
+    }, 800);
+  }
+}
+function openAchievements(){
+  document.getElementById('colTitle').textContent = '成就';
+  document.getElementById('colOrder').textContent = S.orderPoints;
+  const body = document.getElementById('colBody');
+  body.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'ach-list';
+  ACHIEVEMENTS.forEach(a=>{
+    const un = S.achievements[a.id];
+    const item = document.createElement('div');
+    item.className = 'ach-item ' + (un?'unlocked':'locked');
+    item.innerHTML = `
+      <div class="ach-icon">
+        <svg viewBox="0 0 40 40" width="36" height="36">
+          <circle cx="20" cy="20" r="16" fill="none" stroke="${un?'#d4af37':'#4a4438'}" stroke-width="1.5"/>
+          <circle cx="20" cy="20" r="8" fill="${un?'rgba(212,175,55,.2)':'transparent'}"/>
+        </svg>
+      </div>
+      <div class="ach-info">
+        <div class="ach-name" style="color:${un?'var(--gold)':'var(--paper-faded)'}">${un?a.name:'？？？'}</div>
+        <div class="ach-desc">${a.desc}</div>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+  body.appendChild(list);
+  show('screen-collection');
+}
+
+/* ---------- 每日典籍 ---------- */
+function todayStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+function getDailyLevel(){
+  // 從已解鎖關卡中選一個（依日期種子）
+  const pool = LEVELS.filter(l=>!l.hidden);
+  const seed = todayStr().split('').reduce((s,c)=>s+c.charCodeAt(0),0);
+  return pool[seed % pool.length];
+}
+function openDaily(){
+  const lv = getDailyLevel();
+  const today = todayStr();
+  const doneToday = S.dailyDate===today;
+  if(doneToday){ toast('今日典籍已修復，明日再來'); return; }
+  startLevel(lv);
+  // 標記為每日
+  puzzleState.data.isDaily = true;
+}
+
 /* ---------- 事件綁定 ---------- */
 document.getElementById('btnStart').onclick = ()=>{
   sfxPage();
@@ -2177,6 +2712,7 @@ document.getElementById('btnAbout').onclick = ()=>{
 document.getElementById('navCodex').onclick = openCodex;
 document.getElementById('navSpirits').onclick = openSpirits;
 document.getElementById('navUpgrade').onclick = openUpgrades;
+document.getElementById('navAch').onclick = openAchievements;
 
 document.querySelectorAll('[data-back="hall"]').forEach(el=>{
   el.onclick = ()=>{ renderHall(); show('screen-hall'); };
