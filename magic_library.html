@@ -559,6 +559,44 @@ h1,h2,h3{font-weight:normal;letter-spacing:4px;}
 }
 .tutorial-tip .skip{color:var(--gold-soft);cursor:pointer;margin-left:10px;text-decoration:underline;}
 
+/* 提示按鈕 */
+.hint-btn{
+  position:absolute;top:10px;right:10px;
+  background:rgba(20,28,46,.8);border:1px solid var(--gold-soft);
+  color:var(--gold-soft);border-radius:16px;padding:6px 14px;
+  font-size:12px;cursor:pointer;letter-spacing:1px;z-index:10;
+}
+.hint-btn:hover{background:rgba(212,175,55,.15);}
+
+/* 詩句對聯 */
+.couplet-area{display:flex;flex-direction:column;gap:16px;width:100%;max-width:500px;}
+.couplet-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;}
+.couplet-line{
+  background:linear-gradient(160deg,var(--paper),var(--paper-dim));
+  color:var(--ink);padding:10px 16px;border-radius:4px;
+  font-size:14px;letter-spacing:2px;border:1px solid var(--gold-soft);
+}
+.couplet-choice{
+  background:var(--panel);border:1px solid var(--gold-soft);color:var(--paper);
+  padding:10px 16px;border-radius:4px;cursor:pointer;font-size:13px;
+  letter-spacing:1px;transition:all .2s;min-height:44px;
+}
+.couplet-choice:hover{border-color:var(--gold);}
+.couplet-choice.matched{opacity:.4;pointer-events:none;}
+.couplet-choice.wrong{border-color:var(--danger);animation:shake .4s;}
+
+/* 音符序列 */
+.note-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.note-pad{
+  width:72px;height:72px;border-radius:12px;cursor:pointer;
+  background:linear-gradient(160deg,#2a3a5a,#1a2540);
+  border:2px solid var(--gold-soft);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:var(--gold-soft);transition:all .2s;
+}
+.note-pad.active{background:radial-gradient(circle,rgba(212,175,55,.6),rgba(140,110,40,.8));box-shadow:0 0 20px rgba(212,175,55,.6);}
+.note-pad.wrong{border-color:var(--danger);animation:shake .4s;}
+
 /* 提示 Toast */
 #toast{
   position:fixed;top:20px;left:50%;transform:translateX(-50%);
@@ -1329,6 +1367,168 @@ const LEVELS = [
     storyAfter:'五星連線，化為一句輕聲的感謝：「辛苦了，守典人。」——這是圖書館對你說的話。',
     codex:{desc:'圖書館對歷代守典人的緘默致謝。',fragment:'原來圖書館一直知道你在。',spirit:'final'},
   },
+
+  /* ===== v3.0 擴充：元素典庫 ===== */
+  { id:'el12', vault:'element', name:'《風之四相》', type:'couplet', disorder:'排序錯亂',
+    reward:80, hint:'為上句選出對仗的下句。',
+    couplets:[
+      {upper:'山風過林梢',lower:'海濤拍岸壁'},
+      {upper:'穀風送花訊',lower:'焚風灼麥芒'},
+    ],
+    storyBefore:'風的四相篇章散了。對上下句，恢復這卷詩。',
+    storyAfter:'風之四相對仗工整。你彷彿感到微風穿過書架。',
+    codex:{desc:'風元素的四種形態詩篇。',fragment:'風無形，卻能繪出四季。'}
+  },
+  { id:'el13', vault:'element', name:'《火之形態》', type:'order', disorder:'排序錯亂',
+    reward:85, hint:'依火的生滅排序。',
+    pages:[
+      {n:3,text:'餘燼隨風散去。'},
+      {n:1,text:'火星初現，乾草引燃。'},
+      {n:4,text:'黑灰落定，萬籟俱寂。'},
+      {n:2,text:'烈焰熊熊，照亮夜空。'},
+    ],
+    storyBefore:'火的形態散了。從初燃到熄滅，恢復脈絡。',
+    storyAfter:'火之形態歸序。你記住了溫度，也記住了熄滅。',
+    codex:{desc:'火元素從生到滅的形態記錄。',fragment:'火是光明，也是代價。'}
+  },
+  { id:'el14', vault:'element', name:'《水之循環》', type:'shelf', disorder:'排序錯亂',
+    reward:90, hint:'依水的循環歸位：蒸發、降雨、匯流。',
+    shelfSlots:[{label:'蒸發'},{label:'降雨'},{label:'匯流'}],
+    books:[
+      {name:'水汽昇天',color:'#5dade2',slot:0},{name:'雲霧凝結',color:'#85c1e9',slot:0},
+      {name:'天降甘霖',color:'#2980b9',slot:1},{name:'雨滴落地',color:'#2471a3',slot:1},
+      {name:'溪流入河',color:'#1a5276',slot:2},{name:'百川歸海',color:'#154360',slot:2},
+    ],
+    storyBefore:'水的循環被打亂了。恢復這場永無止境的旅行。',
+    storyAfter:'水之循環恢復。你看見天窗外的雲彩，正在緩緩移動。',
+    codex:{desc:'水元素的蒸發、降雨、匯流循環。',fragment:'水從不停歇，只是在旅行。'}
+  },
+
+  /* ===== v3.0 擴充：星辰典庫 ===== */
+  { id:'st10', vault:'star', name:'《月相六紀》', type:'order', disorder:'排序錯亂',
+    reward:95, hint:'依月相盈虧排序。',
+    pages:[
+      {n:4,text:'晦月：暗夜無光，萬籟俱寂。'},
+      {n:1,text:'朔月：新月初現，細如銀鉤。'},
+      {n:2,text:'上弦：半月斜掛，清輝半瀉。'},
+      {n:3,text:'滿月：圓盤當空，光灑大地。'},
+    ],
+    storyBefore:'月相的篇章散了。從朔到晦，恢復月亮的呼吸。',
+    storyAfter:'月相歸序。窗外，月光緩緩移過書架。',
+    codex:{desc:'月亮盈虧的六個階段。',fragment:'月有圓缺，人有悲歡。'}
+  },
+  { id:'st11', vault:'star', name:'《黃道樂章》', type:'notes', disorder:'封印鬆動',
+    reward:110, hint:'聆聽黃道十二宮的音階，再重複。',
+    notes:[0,2,4,2,0,4],
+    storyBefore:'黃道十二宮的鐘聲被擾亂了。先聆聽，再彈奏。',
+    storyAfter:'黃道樂章恢復。你彷彿聽見天球緩緩轉動的和聲。',
+    codex:{desc:'黃道十二宮的音階對應。',fragment:'天體運行，皆是音樂。'}
+  },
+  { id:'st12', vault:'star', name:'《極光之舞》', type:'piece', disorder:'殘缺破損',
+    reward:100, hint:'拼合極光在極夜天空舞動的畫面。',
+    gridSize:3, palette:['#1a2a4a','#2a4a5a','#3a6a6a','#4a8a6a','#5aaa7a','#6aba8a','#3a5a7a','#4a6a8a','#2a4a6a'],
+    storyBefore:'極光的圖被撕碎了。拼回那道綠色的天幕之舞。',
+    storyAfter:'極光重現。你彷彿看見綠光在天花板上流淌。',
+    codex:{desc:'極光在極夜天空的生態記錄。',fragment:'極光是太陽風與大氣的舞蹈。'}
+  },
+
+  /* ===== v3.0 擴充：生靈典庫 ===== */
+  { id:'li10', vault:'life', name:'《飛鳥集》', type:'couplet', disorder:'排序錯亂',
+    reward:95, hint:'為鳥詩選出對仗的下句。',
+    couplets:[
+      {upper:'晨鳴驚曉露',lower:'暮宿帶煙霞'},
+      {upper:'雁字橫寒碧',lower:'鶯梭織柳絲'},
+    ],
+    storyBefore:'飛鳥的詩散了。對上下句，恢復這片鳥鳴。',
+    storyAfter:'飛鳥集對仗完成。你彷彿聽見窗外的鳥聲。',
+    codex:{desc:'飛鳥的詩篇。',fragment:'每隻鳥都有自己的歌。'}
+  },
+  { id:'li11', vault:'life', name:'《游魚樂》', type:'memory', disorder:'封印鬆動',
+    reward:100, hint:'翻牌配對成對的游魚。',
+    pairs:[
+      {id:'koi',label:'錦鯉'},{id:'gold',label:'金魚'},
+      {id:'cloud',label:'雲斑'},{id:'coral',label:'珊瑚'},
+    ],
+    storyBefore:'游魚的記憶散了。翻牌配對，恢復這條溪流。',
+    storyAfter:'游魚成對。空氣中彷彿有水聲。',
+    codex:{desc:'溪流中游魚的記憶。',fragment:'魚之樂，是謂鯈魚之樂。'}
+  },
+  { id:'li12', vault:'life', name:'《四季物候》', type:'order', disorder:'排序錯亂',
+    reward:105, hint:'依春夏秋冬排序。',
+    pages:[
+      {n:3,text:'秋收：稻穗低垂，落葉滿徑。'},
+      {n:1,text:'春生：嫩芽破土，燕子歸來。'},
+      {n:4,text:'冬藏：瑞雪覆蓋，萬物蟄伏。'},
+      {n:2,text:'夏長：蟬鳴聲聲，荷風送香。'},
+    ],
+    storyBefore:'四季物候的篇章散了。恢復大自然的年輪。',
+    storyAfter:'四季物候歸序。你感到圖書館的光影跟著季節流轉。',
+    codex:{desc:'四季物候的記錄。',fragment:'春生夏長，秋收冬藏。'}
+  },
+
+  /* ===== v3.0 擴充：古秘典庫 ===== */
+  { id:'an8', vault:'ancient', name:'《守典人系譜》', type:'couplet', disorder:'排序錯亂',
+    reward:115, hint:'為守典人的事蹟選出對仗句。',
+    couplets:[
+      {upper:'初代立館鎮三戰',lower:'二代守卷護千秋'},
+      {upper:'三代焚身封禁忌',lower:'四代隱名待來者'},
+    ],
+    storyBefore:'守典人的系譜散了。對上下句，讀懂他們的傳承。',
+    storyAfter:'系譜對仗完成。你胸口的溯序之瞳，與歷代守典人共鳴。',
+    codex:{desc:'歷代守典人的系譜詩。',fragment:'守典人，一脈相承。'}
+  },
+  { id:'an9', vault:'ancient', name:'《史前紀年》', type:'order', disorder:'排序錯亂',
+    reward:120, hint:'依史前年代先後排序。',
+    pages:[
+      {n:3,text:'第三次大戰：諸神隱退，圖書館封存。'},
+      {n:1,text:'太初：法則初生，第一卷典籍寫成。'},
+      {n:4,text:'當代：你——新任守典人——歸來。'},
+      {n:2,text:'第一次大戰：典籍四散，法則紊亂。'},
+    ],
+    storyBefore:'史前紀年散了。這是大陸最古老的時間軸。',
+    storyAfter:'紀年歸序。你終於明白自己站在多長的時間線上。',
+    codex:{desc:'魔星大陸的史前紀年。',fragment:'歷史很長，你只是其中一頁。'}
+  },
+  { id:'an10', vault:'ancient', name:'《藏書閣銘》', type:'decrypt', disorder:'塵封失語',
+    reward:125, hint:'填入藏書閣的銘文。',
+    template:'書有南北二閣，南閣藏____，北閣藏____。',
+    blanks:[
+      {answer:'明文',options:['明文','咒文','古文','神文']},
+      {answer:'秘卷',options:['秘卷','空卷','殘卷','天卷']},
+    ],
+    storyBefore:'藏書閣的銘文被磨去了。想一想兩閣各藏什麼。',
+    storyAfter:'銘文補全。你彷彿看見兩座高閣對望。',
+    codex:{desc:'圖書館藏書閣的銘文。',fragment:'明文示人，秘卷守幽。'}
+  },
+
+  /* ===== v3.0 擴充：禁忌典庫 ===== */
+  { id:'fb9', vault:'forbidden', name:'《命運之線》', type:'constraint', disorder:'法則錯位',
+    reward:170, hint:'五種命運法則，依約束排列。',
+    elements:['宿命','機緣','自由','因果','輪迴'],
+    constraints:[
+      {a:'宿命',b:'輪迴',type:'adj',label:'宿命 必須 緊鄰 輪迴'},
+      {a:'機緣',b:'自由',type:'gap',label:'機緣 與 自由 須 隔一位'},
+      {a:'因果',b:'宿命',type:'notadj',label:'因果 不可 鄰接 宿命'},
+      {a:'機緣',b:'輪迴',type:'notadj',label:'機緣 不可 鄰接 輪迴'},
+    ],
+    storyBefore:'命運之線打結了。誰先誰後，決定了萬有的軌跡。',
+    storyAfter:'命運之線理順。你終於讀懂：宿命與自由，從來不是對立。',
+    codex:{desc:'命運法則的位次排列。',fragment:'命運是一首未完成的詩，由你續寫。'}
+  },
+  { id:'fb10', vault:'forbidden', name:'《因果之鏈》', type:'notes', disorder:'封印鬆動',
+    reward:180, hint:'聆聽因果之鏈的音階，再重複。',
+    notes:[4,2,0,2,4,6,4],
+    storyBefore:'因果之鏈的鐘聲斷了。先聆聽，再接續。',
+    storyAfter:'因果之鏈重連。你彷彿看見每一個因，都結著一個果。',
+    codex:{desc:'因果法則的音階。',fragment:'欲知前世因，今生受者是。'}
+  },
+  { id:'fb11', vault:'forbidden', name:'《空間摺疊》', type:'piece', disorder:'殘缺破損',
+    reward:190, hint:'拼合空間摺疊的異象圖。',
+    gridSize:3, palette:['#2a1a3a','#3a2a4a','#4a3a5a','#5a4a6a','#6a5a7a','#7a6a8a','#4a3a5a','#5a4a6a','#3a2a4a'],
+    storyBefore:'空間摺疊的圖被撕碎了。拼回這幅違背常理的景象。',
+    storyAfter:'空間摺疊重現。你彷彿看見兩個書架在遠處重合。',
+    codex:{desc:'空間法則的禁忌記錄。',fragment:'空間不是容器，而是織物。'}
+  },
 ];
 
 /* ---------- 書靈資料 ---------- */
@@ -1584,6 +1784,43 @@ function buildPuzzle(lv){
     case 'constraint': buildConstraint(lv, area); break;
     case 'memory': buildMemory(lv, area); break;
     case 'connect': buildConnect(lv, area); break;
+    case 'couplet': buildCouplet(lv, area); break;
+    case 'notes': buildNotes(lv, area); break;
+  }
+  // 顯示提示按鈕
+  setTimeout(()=>{
+    const pz = document.getElementById('puzzleArea');
+    if(pz && !document.getElementById('hintBtn')){
+      const hb = document.createElement('button');
+      hb.id = 'hintBtn'; hb.className = 'hint-btn'; hb.textContent = '提示 20';
+      hb.onclick = showHint;
+      pz.style.position = 'relative';
+      pz.appendChild(hb);
+    }
+  }, 100);
+  // 首次教學提示
+  if(!S.tutorialDone[lv.type]){
+    S.tutorialDone[lv.type] = true;
+    saveGame();
+    const tips = {
+      order:'點選下方紙條，再點書本頁面貼上。完成後點「檢查」。',
+      piece:'拖動碎片到正確位置，會自動吸附。',
+      rune:'依序點擊符文節點，順序正確才會點亮。',
+      cate:'將卡片拖入對應分類區。',
+      decrypt:'依線索填入正確字詞。',
+      shelf:'將書本拖入對應書架位置。',
+      constraint:'依約束條件排列元素，完成後點「檢查約束」。',
+      memory:'翻開成對的卡牌，記住位置。',
+      connect:'依序點亮恆星，連出星座。',
+      couplet:'為上句選出正確的下句。',
+      notes:'先聆聽音階，再按相同順序重複。',
+    };
+    const tip = document.createElement('div');
+    tip.className = 'tutorial-tip';
+    tip.innerHTML = (tips[lv.type]||'') + '<span class="skip">知道了</span>';
+    tip.querySelector('.skip').onclick = ()=>tip.remove();
+    document.body.appendChild(tip);
+    setTimeout(()=>tip.remove(), 5000);
   }
 }
 
@@ -2415,6 +2652,141 @@ function buildConnect(lv, area){
   area.appendChild(box);
 }
 
+/* ----- 10. 詩句對聯 ----- */
+function buildCouplet(lv, area){
+  // lv.couplets: [{upper:'上句', lower:'下句'}, ...]
+  puzzleState.data.matched = 0;
+  puzzleState.data.total = lv.couplets.length;
+  const container = document.createElement('div');
+  container.className = 'couplet-area';
+  // 上句固定左側
+  lv.couplets.forEach((c,i)=>{
+    const row = document.createElement('div');
+    row.className = 'couplet-row';
+    const upper = document.createElement('div');
+    upper.className = 'couplet-line';
+    upper.textContent = c.upper;
+    row.appendChild(upper);
+    container.appendChild(row);
+  });
+  // 下句選項（打亂）
+  const choices = lv.couplets.map((c,i)=>({text:c.lower, idx:i}));
+  choices.sort(()=>Math.random()-0.5);
+  const choiceRow = document.createElement('div');
+  choiceRow.className = 'couplet-row';
+  choices.forEach(ch=>{
+    const btn = document.createElement('div');
+    btn.className = 'couplet-choice';
+    btn.textContent = ch.text;
+    btn.onclick = ()=>{
+      if(btn.classList.contains('matched')) return;
+      const upperIdx = ch.idx;
+      // 找對應上句
+      const targetUpper = container.children[upperIdx].querySelector('.couplet-line');
+      // 檢查是否已配對
+      if(container.children[upperIdx].querySelector('.couplet-choice')){
+        btn.classList.add('wrong');
+        sfxWrong();
+        setTimeout(()=>btn.classList.remove('wrong'), 500);
+        return;
+      }
+      // 正確
+      const placed = document.createElement('div');
+      placed.className = 'couplet-line';
+      placed.style.borderColor = 'var(--gold)';
+      placed.textContent = ch.text;
+      container.children[upperIdx].appendChild(placed);
+      btn.classList.add('matched');
+      sfxCorrect();
+      puzzleState.data.matched++;
+      if(puzzleState.data.matched===puzzleState.data.total){
+        setTimeout(onSolve, 600);
+      }
+    };
+    choiceRow.appendChild(btn);
+  });
+  container.appendChild(choiceRow);
+  area.appendChild(container);
+}
+
+/* ----- 11. 音符序列 ----- */
+function buildNotes(lv, area){
+  // lv.notes: array of note indices to repeat
+  puzzleState.data.sequence = [];
+  puzzleState.data.seq = lv.notes;
+  puzzleState.data.playing = false;
+  const freqs = [262, 330, 392, 440, 523, 659, 784, 880, 1047]; // C4 to C6
+  const names = ['宮','商','角','徵','羽','變宮','變徵','清角','少宮'];
+  const grid = document.createElement('div');
+  grid.className = 'note-grid';
+  for(let i=0;i<9;i++){
+    const pad = document.createElement('div');
+    pad.className = 'note-pad';
+    pad.dataset.note = i;
+    pad.textContent = names[i];
+    pad.onclick = ()=>{
+      if(puzzleState.data.playing) return;
+      tone(freqs[i], 0.3, 'sine', 0.12);
+      pad.classList.add('active');
+      setTimeout(()=>pad.classList.remove('active'), 300);
+      if(puzzleState.data.seq){
+        puzzleState.data.sequence.push(i);
+        const len = puzzleState.data.sequence.length;
+        if(i !== puzzleState.data.seq[len-1]){
+          pad.classList.add('wrong');
+          sfxWrong();
+          setTimeout(()=>{pad.classList.remove('wrong'); puzzleState.data.sequence=[];}, 600);
+          toast('音階有誤，請重新跟隨');
+          return;
+        }
+        if(len === puzzleState.data.seq.length){
+          setTimeout(onSolve, 500);
+        }
+      }
+    };
+    grid.appendChild(pad);
+  }
+  // 播放按鈕
+  const playBtn = document.createElement('button');
+  playBtn.className = 'btn small';
+  playBtn.style.marginTop = '12px';
+  playBtn.textContent = '聆聽音階';
+  playBtn.onclick = ()=>{
+    if(puzzleState.data.playing) return;
+    puzzleState.data.playing = true;
+    playBtn.disabled = true;
+    puzzleState.data.seq.forEach((n,i)=>{
+      setTimeout(()=>{
+        tone(freqs[n], 0.35, 'sine', 0.12);
+        grid.children[n].classList.add('active');
+        setTimeout(()=>grid.children[n].classList.remove('active'), 350);
+      }, i*450);
+    });
+    setTimeout(()=>{
+      puzzleState.data.playing = false;
+      playBtn.disabled = false;
+    }, puzzleState.data.seq.length*450+200);
+  };
+  area.appendChild(grid);
+  area.appendChild(playBtn);
+}
+
+/* ----- 提示系統 ----- */
+function showHint(){
+  const cost = 20;
+  if(S.orderPoints < cost){ toast('秩序值不足，無法取得提示'); return; }
+  const lv = currentLevel;
+  let hint = lv.hint || '細心觀察線索，答案就在其中。';
+  S.orderPoints -= cost;
+  saveGame();
+  sfxPage();
+  showDialog('提示', `消耗 ${cost} 秩序值\n\n${hint}`, ()=>{
+    document.getElementById('colOrder') && (document.getElementById('colOrder').textContent = S.orderPoints);
+    const op = document.getElementById('orderPoints'); if(op) op.textContent = S.orderPoints;
+    const op2 = document.getElementById('vaultOrderPoints'); if(op2) op2.textContent = S.orderPoints;
+  });
+}
+
 /* ---------- 通關處理 ---------- */
 function onSolve(){
   if(puzzleState.solved) return;
@@ -2438,6 +2810,7 @@ function onSolve(){
   } else {
     S.orderPoints += Math.round(reward*0.2); // 重玩獎勵減半
   }
+  let rewardText = `秩序值 +${firstTime?reward:Math.round(reward*0.2)}`;
   // 每日典籍獎勵
   if(puzzleState.data && puzzleState.data.isDaily){
     const today = todayStr();
@@ -2453,7 +2826,6 @@ function onSolve(){
   checkAchievements();
   // 成功彈窗
   document.getElementById('successText').textContent = lv.storyAfter;
-  let rewardText = `秩序值 +${firstTime?reward:Math.round(reward*0.2)}`;
   if(firstTime && lv.codex && lv.codex.spirit){
     rewardText += `　·　喚醒書靈「${SPIRITS[lv.codex.spirit].name}」`;
   } else if(firstTime){
